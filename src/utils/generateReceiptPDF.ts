@@ -57,7 +57,7 @@ const drawCompanyHeader = async (doc: jsPDF, pageWidth: number, margin: number, 
   // Company name centred
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.setTextColor(33, 33, 33);
+  doc.setTextColor(204, 0, 0);
   doc.text("MFON-OBONG NIGERIA ENTERPRISES", pageWidth / 2, headerTopY + 8, { align: "center" });
 
   // Description right of logo
@@ -75,8 +75,8 @@ const drawCompanyHeader = async (doc: jsPDF, pageWidth: number, margin: number, 
   cursorY = headerTopY + logoSize + 12;
 
   // Divider
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.2);
+  doc.setDrawColor(204, 0, 0);
+  doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 5;
 
@@ -129,8 +129,8 @@ const drawCompanyHeader = async (doc: jsPDF, pageWidth: number, margin: number, 
   cursorY += 6;
 
   // Final divider
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.2);
+  doc.setDrawColor(204, 0, 0);
+  doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 6;
 
@@ -157,12 +157,12 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.setTextColor(33, 33, 33);
+  doc.setTextColor(204, 0, 0);
   doc.text(title, pageWidth / 2, cursorY + 5, { align: "center" });
   cursorY += 12;
 
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.2);
+  doc.setDrawColor(204, 0, 0);
+  doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 7;
 
@@ -277,7 +277,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     summaryLines.forEach((row) => {
       doc.setFont("helvetica", row.bold ? "bold" : "normal");
       doc.setFontSize(8.5);
-      const [r, g, b] = row.color || (row.bold ? [33, 33, 33] : [80, 80, 80]);
+      const [r, g, b] = row.color || (row.bold ? [204, 0, 0] : [80, 80, 80]);
       doc.setTextColor(r, g, b);
       doc.text(row.label, pageWidth - margin - 55, cursorY);
       doc.text(row.value, pageWidth - margin - 4, cursorY, { align: "right" });
@@ -285,7 +285,8 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     });
 
     cursorY += 2;
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
   }
@@ -294,7 +295,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
   if (txn.type === "DEPOSIT") {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(33, 33, 33);
+    doc.setTextColor(204, 0, 0);
     doc.text(`Amount Deposited: ${fmt(txn.total || 0)}`, margin, cursorY);
     cursorY += 7;
     if (txn.paymentMethod) {
@@ -304,7 +305,8 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
       doc.text(`Payment Method: ${txn.paymentMethod}`, margin, cursorY);
       cursorY += 6;
     }
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
   } else if (txn.type !== "RETURN") {
@@ -336,21 +338,23 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     if (outstanding > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
-      doc.setTextColor(200, 50, 50);
+      doc.setTextColor(204, 0, 0);
       doc.text("Outstanding:", pageWidth - margin - 55, cursorY);
       doc.text(fmt(outstanding), pageWidth - margin - 4, cursorY, { align: "right" });
       cursorY += 5;
     }
 
     cursorY += 2;
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
   }
 
   // --- FOOTER ---
   const footerY = pageHeight - 15;
-  doc.setDrawColor(200, 200, 200);
+  doc.setDrawColor(204, 0, 0);
+  doc.setLineWidth(0.4);
   doc.line(margin, footerY, pageWidth - margin, footerY);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);

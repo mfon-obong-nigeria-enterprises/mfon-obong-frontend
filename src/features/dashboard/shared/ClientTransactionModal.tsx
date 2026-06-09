@@ -249,8 +249,8 @@ const ClientTransactionModal = () => {
                   <div className="bg-[#F9FAFB] overflow-hidden">
                     <div className="grid grid-cols-[1fr_1fr_1fr_auto] md:grid-cols-4 gap-4 p-4 bg-[#F5F5F5] border-b border-gray-100">
                       <span className="text-xs md:text-[16px] text-[#333333]">Quantity</span>
-                      <span className="text-xs md:text-[16px] text-[#333333]">Unit Price</span>
-                      <span className="text-xs md:text-[16px] text-[#333333]">Product</span>
+                      <span className="text-xs md:text-[16px] text-[#333333]">Description of goods</span>
+                      <span className="text-xs md:text-[16px] text-[#333333]">Rate</span>
                       <span className="text-xs md:text-[16px] text-[#333333] text-right">Amount</span>
                     </div>
                     <div className="bg-white border-b border-[#F5F5F5] border-[1px] pt-4 grid grid-cols-1 gap-2">
@@ -260,10 +260,10 @@ const ClientTransactionModal = () => {
                             <span className="text-xs md:text-sm text-[#444444]">
                               {item.quantity} {item.unit?.split(" ")[0]?.toLowerCase() || "units"}
                             </span>
+                            <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
                             <span className="text-xs md:text-sm text-[#444444] font-medium">
                               {formatCurrency(item.unitPrice)}/{item.unit?.split(" ")[0]?.toLowerCase() || "unit"}
                             </span>
-                            <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
                             <span className="text-xs md:text-sm text-[#444444] text-right">
                               {formatCurrency(item.subtotal)}
                             </span>

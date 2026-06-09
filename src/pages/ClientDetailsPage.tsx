@@ -306,7 +306,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     // Company name centered on the page
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.setTextColor(33, 33, 33);
+    doc.setTextColor(204, 0, 0);
     doc.text("MFON-OBONG NIGERIA ENTERPRISES", pageWidth / 2, headerTopY + 8, { align: "center" });
 
     // Business description centered, below company name
@@ -324,8 +324,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     cursorY = headerTopY + logoSize + 12;
 
     // Dividing line
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.2);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 5;
 
@@ -385,15 +385,15 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     cursorY += 6;
 
     // Dividing line before statement content
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.2);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
 
     // Account Statement title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.setTextColor(33, 33, 33);
+    doc.setTextColor(204, 0, 0);
     doc.text("Account Statement", pageWidth / 2, cursorY + 5, { align: "center" });
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -401,8 +401,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     doc.text("Materials Supply Record", pageWidth / 2, cursorY + 11, { align: "center" });
     cursorY += 18;
 
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.2);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 8;
 
@@ -480,7 +480,9 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       dateRangeText = `${startMonth} ${startYear} - ${endMonth} ${endYear}`;
     }
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(204, 0, 0);
     doc.text(`Transaction History, ${dateRangeText}`, margin, cursorY);
+    doc.setTextColor(51, 51, 51);
     cursorY += 10;
 
     // Running total starts with BF debt if applicable
@@ -488,9 +490,9 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
     // Only draw B/F box if there is a debt before the filter period
     if (isDebt) {
-      doc.setFillColor(248, 235, 235);
+      doc.setFillColor(252, 240, 242);
       doc.rect(margin, cursorY, pageWidth - margin * 2, 10, "F");
-      doc.setFillColor(231, 76, 60);
+      doc.setFillColor(204, 0, 0);
       doc.rect(margin, cursorY, 1.5, 10, "F");
 
       doc.setFont("helvetica", "bold");
@@ -577,13 +579,13 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       checkPageBreak(totalBlockHeight);
 
       // Header
-      doc.setFillColor(246, 246, 246);
+      doc.setFillColor(252, 240, 242);
       doc.rect(margin, cursorY, pageWidth - margin * 2, headerHeight, "F");
-      doc.setFillColor(51, 51, 51);
+      doc.setFillColor(204, 0, 0);
       doc.rect(margin, cursorY, 1.5, headerHeight, "F");
 
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(51, 51, 51);
+      doc.setTextColor(204, 0, 0);
       doc.text(
         `${t.type === "WHOLESALE" ? "Wholesale Supplied" : "Materials Supplied"} on ${formatDate(getTransactionDate(txn))}`,
         margin + 4,
@@ -675,10 +677,10 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       }
 
       // Subtotal
-      doc.setFillColor(246, 246, 246);
+      doc.setFillColor(252, 240, 242);
       doc.rect(margin, cursorY, pageWidth - margin * 2, subTotalHeight, "F");
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(51, 51, 51);
+      doc.setTextColor(204, 0, 0);
       doc.text(
         `SUB TOTAL: ${formatCurrencyForPDF(transactionTotal)}`,
         pageWidth - margin - 4,
@@ -690,7 +692,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
     // --- 4. GRAND TOTAL ---
     checkPageBreak(15);
-    doc.setFillColor(68, 68, 68);
+    doc.setFillColor(204, 0, 0);
     doc.rect(margin, cursorY, pageWidth - margin * 2, 12, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -707,7 +709,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     const lessSectionHeaderHeight = 10;
     checkPageBreak(lessSectionHeaderHeight + 5);
 
-    doc.setFillColor(249, 249, 249);
+    doc.setFillColor(252, 240, 242);
     doc.rect(
       margin,
       cursorY,
@@ -715,12 +717,12 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       lessSectionHeaderHeight,
       "F"
     );
-    doc.setFillColor(150, 150, 150);
+    doc.setFillColor(204, 0, 0);
     doc.rect(margin, cursorY, 1.5, lessSectionHeaderHeight, "F");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(51, 51, 51);
+    doc.setTextColor(204, 0, 0);
     doc.text("Less:", margin + 5, cursorY + 7);
     cursorY += lessSectionHeaderHeight;
 
@@ -794,13 +796,13 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
           checkPageBreak(retBlockHeight);
 
           // Header bar
-          doc.setFillColor(246, 246, 246);
+          doc.setFillColor(252, 240, 242);
           doc.rect(margin, cursorY, pageWidth - margin * 2, retHeaderHeight, "F");
-          doc.setFillColor(51, 51, 51);
+          doc.setFillColor(140, 28, 19);
           doc.rect(margin, cursorY, 1.5, retHeaderHeight, "F");
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
-          doc.setTextColor(51, 51, 51);
+          doc.setTextColor(204, 0, 0);
           doc.text(`Items Returned on ${formatDate(getTransactionDate(txn))}`, margin + 4, cursorY + 5.5);
 
           if (t.invoiceNumber) {
@@ -845,11 +847,11 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
           });
 
           // Amount returned footer
-          doc.setFillColor(246, 246, 246);
+          doc.setFillColor(252, 240, 242);
           doc.rect(margin, cursorY, pageWidth - margin * 2, retSubTotalHeight, "F");
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
-          doc.setTextColor(51, 51, 51);
+          doc.setTextColor(204, 0, 0);
           doc.text(
             `AMOUNT RETURNED: ${formatCurrencyForPDF(returnTotal)}`,
             pageWidth - margin - 4,
@@ -933,13 +935,13 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     if (finalBalance < 0) balanceLabel = "BALANCE (DEBT)";
     else if (finalBalance > 0) balanceLabel = "BALANCE (CREDIT)";
     
-    doc.setFillColor(248, 235, 235);
+    doc.setFillColor(252, 240, 242);
     doc.rect(margin, cursorY, pageWidth - margin * 2, 12, "F");
-    doc.setFillColor(231, 76, 60);
+    doc.setFillColor(204, 0, 0);
     doc.rect(margin, cursorY, 1.5, 12, "F");
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(51, 51, 51);
+    doc.setTextColor(204, 0, 0);
     doc.text(
       `${balanceLabel}: ${formatCurrencyForPDF(finalBalance)}`,
       pageWidth - margin - 4,
@@ -981,7 +983,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
     // --- FOOTER ---
     const footerY = pageHeight - 15;
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(204, 0, 0);
+    doc.setLineWidth(0.4);
     doc.line(margin, footerY, pageWidth - margin, footerY);
     doc.setFontSize(7);
     doc.setTextColor(120, 120, 120);

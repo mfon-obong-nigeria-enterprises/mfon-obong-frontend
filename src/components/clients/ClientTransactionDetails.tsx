@@ -363,10 +363,10 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                             Quantity
                           </span>
                           <span className="text-xs md:text-[16px] text-[#333333]">
-                            Unit Price
+                            Description of goods
                           </span>
                           <span className="text-xs md:text-[16px] text-[#333333]">
-                            Product
+                            Rate
                           </span>
                           <span className="text-xs md:text-[16px] text-[#333333] text-right">
                             Amount
@@ -382,13 +382,13 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                                   {item.unit?.split(" ")[0]?.toLowerCase() ||
                                     "units"}
                                 </span>
+                                <span className="text-xs md:text-sm text-[#444444]">
+                                  {item.productName} ({item.unit})
+                                </span>
                                 <span className="text-xs md:text-sm text-[#444444] font-medium">
                                   {formatCurrency(item.unitPrice)}/
                                   {item.unit?.split(" ")[0]?.toLowerCase() ||
                                     "unit"}
-                                </span>
-                                <span className="text-xs md:text-sm text-[#444444]">
-                                  {item.productName} ({item.unit})
                                 </span>
                                 <span className="text-xs md:text-sm text-[#444444] text-right">
                                   {formatCurrency(item.subtotal)}
