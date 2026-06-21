@@ -15,7 +15,7 @@ const MaintainerLayout = () => {
   return (
     <SidebarProvider>
       <MaintainerSidebarWithModal />
-      <div className="w-full">
+      <div className="w-full min-w-0 overflow-x-hidden">
         <Header userRole="maintainer" />
         <SidebarTrigger className="fixed z-50" />
         <div
