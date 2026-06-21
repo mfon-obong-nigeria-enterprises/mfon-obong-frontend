@@ -32,6 +32,7 @@ import { toast } from "react-toastify";
 import BlockUnblockClient from "@/features/dashboard/manager/BlockUnblockClient";
 import jsPDF from "jspdf";
 import { getAllTransactions } from "@/services/transactionService";
+import { getClientById } from "@/services/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getTransactionDate } from "@/utils/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
@@ -65,9 +66,19 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       queryKey: ["transactions", user?.branchId],
       queryFn: getAllTransactions,
       enabled: !!user?.branchId,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 0,
+      refetchOnMount: true,
       refetchOnWindowFocus: true,
     });
+
+  // Always fetch the client fresh so balance is never stale
+  const { data: freshClientData } = useQuery({
+    queryKey: ["client", clientId],
+    queryFn: () => getClientById(clientId!),
+    enabled: !!clientId,
+    staleTime: 0,
+    refetchOnMount: true,
+  });
 
   // Update store when data is fetched
   useEffect(() => {
@@ -124,46 +135,26 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     return () => clearTimeout(timeoutId);
   }, [clientId]); //reruns when clientId changes
 
-  //
-  // Derive current balance from most recent transaction snapshot
-  const currentBalance = useMemo(() => {
-    if (!client || !clientId) return 0;
-    
-    // Get all transactions for this client (unfiltered)
-    const allClientTransactions = mergedTransactions
-      .filter((t) => t.client?._id === clientId)
-      .sort(
-        (a, b) =>
-          new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
-      );
+  // Current balance: fresh API fetch is the single source of truth, Zustand store as fallback
+  const currentBalance = freshClientData?.balance ?? client?.balance ?? 0;
 
-    // Use the most recent transaction's snapshot, fallback to client.balance
-    if (allClientTransactions.length > 0) {
-      const mostRecent = allClientTransactions[0];
-      return mostRecent.clientBalanceAfterTransaction ?? client.balance;
-    }
-
-    return client.balance;
-  }, [client, clientId, mergedTransactions]);
-
-  // Create display client with current balance from snapshot
   const displayClient = useMemo(() => {
-    if (!client) return null;
-    return {
-      ...client,
-      balance: currentBalance,
-    };
-  }, [client, currentBalance]);
+    const base = freshClientData ?? client;
+    if (!base) return null;
+    return { ...base, balance: currentBalance };
+  }, [client, freshClientData, currentBalance]);
 
   // Get all transactions for this client (unfiltered - used for metrics)
   const allClientTransactions = useMemo(() => {
     if (!clientId) return [];
     return mergedTransactions
       .filter((t) => t.client?._id === clientId)
-      .sort(
-        (a, b) =>
-          new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
-      );
+      .sort((a, b) => {
+        const dateA = new Date(a.date || a.createdAt).getTime();
+        const dateB = new Date(b.date || b.createdAt).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
   }, [clientId, mergedTransactions]);
 
   const clientTransactions = useMemo(() => {
@@ -215,10 +206,12 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       filtered = filtered.filter((t) => getTransactionDate(t) <= toDate);
     }
 
-    return filtered.sort(
-      (a, b) =>
-        new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
-    );
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt).getTime();
+      const dateB = new Date(b.date || b.createdAt).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }, [
     clientId,
     dateRangeFilter,
@@ -407,19 +400,20 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     cursorY += 8;
 
     // --- DATA PREPARATION ---
-    // Sort the filtered transactions (Oldest to Newest)
-    const sortedTxns = [...transactionsWithBalance].sort(
-      (a, b) =>
-        new Date(a.date || a.createdAt).getTime() - new Date(b.date || b.createdAt).getTime()
-    );
+    // Sort the filtered transactions (Newest to Oldest)
+    const sortedTxns = [...transactionsWithBalance].sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt).getTime();
+      const dateB = new Date(b.date || b.createdAt).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     const supplies = sortedTxns.filter(
       (t) => t.type === "PURCHASE" || t.type === "PICKUP" || t.type === "WHOLESALE"
     );
 
-    // Compute final balance first from the reliable backend snapshot
-    const lastTxnForBalance = sortedTxns[sortedTxns.length - 1];
-    const finalBalance = lastTxnForBalance ? lastTxnForBalance.balanceAfter : currentBalance;
+    // Final balance is always the live client balance from the API — never derived from transaction sort order
+    const finalBalance = currentBalance;
 
     // Compute opening balance by reversing all transaction effects from the known-correct final balance.
     // This is reliable even for old transactions that lack a clientBalanceAfterTransaction snapshot.
@@ -934,14 +928,21 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     let balanceLabel = "BALANCE";
     if (finalBalance < 0) balanceLabel = "BALANCE (DEBT)";
     else if (finalBalance > 0) balanceLabel = "BALANCE (CREDIT)";
-    
-    doc.setFillColor(252, 240, 242);
+
+    const balanceTextColor: [number, number, number] =
+      finalBalance > 0 ? [46, 204, 113] : [204, 0, 0];
+    const balanceFillColor: [number, number, number] =
+      finalBalance > 0 ? [232, 250, 240] : [252, 240, 242];
+    const balanceBorderColor: [number, number, number] =
+      finalBalance > 0 ? [46, 204, 113] : [204, 0, 0];
+
+    doc.setFillColor(...balanceFillColor);
     doc.rect(margin, cursorY, pageWidth - margin * 2, 12, "F");
-    doc.setFillColor(204, 0, 0);
+    doc.setFillColor(...balanceBorderColor);
     doc.rect(margin, cursorY, 1.5, 12, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(204, 0, 0);
+    doc.setTextColor(...balanceTextColor);
     doc.text(
       `${balanceLabel}: ${formatCurrencyForPDF(finalBalance)}`,
       pageWidth - margin - 4,

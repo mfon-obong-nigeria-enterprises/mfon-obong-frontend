@@ -160,7 +160,8 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
     return transactionsWithBalance.sort((a, b) => {
       const dateA = new Date(a.date || a.createdAt).getTime();
       const dateB = new Date(b.date || b.createdAt).getTime();
-      return dateB - dateA;
+      if (dateB !== dateA) return dateB - dateA;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [clientTransactions, client]);
 

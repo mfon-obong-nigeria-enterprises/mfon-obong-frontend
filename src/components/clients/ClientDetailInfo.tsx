@@ -1,23 +1,18 @@
 import type { Client } from "@/types/types";
 import type { Transaction } from "@/types/transactions";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   formatCurrency
 } from "@/utils/formatCurrency";
 import { formatLargeNumber, formatLargeMonetaryNumber } from "@/utils/formatLargeNumber";
 
-const ClientDetailInfo = ({ 
-  client: initialClient, 
-  transactions 
-}: { 
+const ClientDetailInfo = ({
+  client,
+  transactions
+}: {
   client: Client;
   transactions: Transaction[];
 }) => {
-  const [client, setClient] = useState(initialClient);
-
-  useEffect(() => {
-    setClient(initialClient);
-  }, [initialClient]);
 
   const totalOrders = useMemo(() => {
     if (!transactions || transactions.length === 0) return 0;

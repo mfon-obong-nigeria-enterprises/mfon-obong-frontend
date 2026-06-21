@@ -561,6 +561,7 @@ const NewSales: React.FC = () => {
   const queryClient = useQueryClient();
   const { products, categories } = useInventoryStore();
   const clients = useClientStore((state) => state.clients);
+  const updateClient = useClientStore((state) => state.updateClient);
   const { user } = useAuthStore();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -1072,10 +1073,16 @@ const NewSales: React.FC = () => {
           : {}),
       };
 
-      await AddTransaction(payload);
+      const result = await AddTransaction(payload);
       toast.success("Transaction created successfully");
 
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+
+      if (selectedClient && result?.clientBalanceAfterTransaction !== undefined && result.clientBalanceAfterTransaction !== null) {
+        updateClient(selectedClient._id, { balance: result.clientBalanceAfterTransaction });
+        queryClient.invalidateQueries({ queryKey: ["client", selectedClient._id] });
+      }
 
       handleResetClient();
     } catch (error) {

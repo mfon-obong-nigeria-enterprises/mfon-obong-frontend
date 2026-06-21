@@ -20,13 +20,6 @@ const BusinessLocationModal = ({ closeModal }: Props) => {
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const formatPhoneNumber = (value: string) => {
-    const cleaned = value.replace(/\D/g, "");
-    const match = cleaned.match(/^(\d{0,4})(\d{0,3})(\d{0,4})$/);
-    if (!match) return cleaned;
-    return [match[1], match[2], match[3]].filter(Boolean).join("-");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -35,7 +28,7 @@ const BusinessLocationModal = ({ closeModal }: Props) => {
       const payload = {
         name,
         address,
-        phone: phone.replace(/-/g, ""), 
+        phone,
         email: email.trim() === "" ? undefined : email,
       };
 
@@ -117,14 +110,11 @@ const BusinessLocationModal = ({ closeModal }: Props) => {
               placeholder="Enter company phone number"
               type="tel"
               value={phone}
-              onChange={(e) => {
-                const formatted = formatPhoneNumber(e.target.value);
-                setPhone(formatted);
-              }}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
               required
               className="bg-[#D9D9D9]"
               inputMode="numeric"
-              pattern="[0-9]*"
+              pattern="[0-9]+"
             />
           </div>
 

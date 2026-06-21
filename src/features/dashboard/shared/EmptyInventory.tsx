@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Download, Plus } from "lucide-react";
+import { Download, Plus, Tag } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
+import Modal from "@/components/Modal";
+import AddCategory from "@/features/dashboard/shared/inventory/AddCategory";
 
 const EmptyInventory = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
 
   return (
     <div className="space-y-7 mt-2 mx-4">
@@ -42,8 +46,11 @@ const EmptyInventory = () => {
            */}
           {user?.role !== "STAFF" && (
             <div className="flex flex-col md:flex-row gap-5">
-              <Button onClick={() => navigate("/add-prod")}>
-                <Plus /> Add Your First Product
+              <Button onClick={() => setAddCategoryModalOpen(true)}>
+                <Tag /> Add Category First
+              </Button>
+              <Button onClick={() => navigate("/add-prod")} variant="outline">
+                <Plus /> Add Product
               </Button>
               <Button
                 variant="tertiary"
@@ -57,6 +64,14 @@ const EmptyInventory = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={addCategoryModalOpen}
+        onClose={() => setAddCategoryModalOpen(false)}
+        size="xxl"
+      >
+        <AddCategory closeBothModals={() => setAddCategoryModalOpen(false)} />
+      </Modal>
     </div>
   );
 };
