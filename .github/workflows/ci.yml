@@ -36,7 +36,8 @@ jobs:
       - name: Build application
         run: npm run build
         env:
-          # Use placeholder values for CI build checks on feature branches
+          # Placeholder values for CI checks on feature branches
+          # Real values are injected during staging/production deployments
           VITE_API_URL: https://placeholder.example.com/api
           VITE_LOGIN_API: https://placeholder.example.com/api/auth
           VITE_SOCKET_URL: https://placeholder.example.com

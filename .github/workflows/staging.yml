@@ -5,13 +5,11 @@ on:
     branches:
       - staging
 
-env:
-  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/mfon-obong-frontend
-
 jobs:
-  build:
-    name: Build Check
+  build-and-deploy:
+    name: Build and Deploy to Cloudflare Pages (Staging)
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
       - name: Checkout code
@@ -26,78 +24,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linter
-        run: npm run lint
-        continue-on-error: true
-
       - name: Build application
         run: npm run build
         env:
+          # Staging API URLs — points to your staging backend on DigitalOcean
           VITE_API_URL: ${{ secrets.STAGING_API_URL }}
           VITE_LOGIN_API: ${{ secrets.STAGING_LOGIN_API }}
           VITE_SOCKET_URL: ${{ secrets.STAGING_SOCKET_URL }}
 
-  build-and-push:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          # Pass the staging API URLs as build arguments
-          # Vite bakes these into the compiled files during this Docker build
-          build-args: |
-            VITE_API_URL=${{ secrets.STAGING_API_URL }}
-            VITE_LOGIN_API=${{ secrets.STAGING_LOGIN_API }}
-            VITE_SOCKET_URL=${{ secrets.STAGING_SOCKET_URL }}
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:staging
-            ${{ env.DOCKER_IMAGE }}:staging-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    name: Deploy to CapRover Staging
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    environment: staging
-
-    steps:
-      - name: Deploy image to CapRover
-        run: |
-          RESPONSE=$(curl -s -X POST "${{ secrets.CAPROVER_URL }}/api/v2/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"password\":\"${{ secrets.CAPROVER_PASSWORD }}\"}")
-
-          TOKEN=$(echo $RESPONSE | jq -r '.data.token')
-
-          if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
-            echo "CapRover login failed"
-            echo "Response: $RESPONSE"
-            exit 1
-          fi
-
-          DEPLOY_RESPONSE=$(curl -s -X POST "${{ secrets.CAPROVER_URL }}/api/v2/user/apps/appData" \
-            -H "x-captain-auth: $TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"appName\":\"${{ secrets.CAPROVER_STAGING_FRONTEND_APP_NAME }}\",\"captainDefinitionContent\":\"{\\\"schemaVersion\\\":2,\\\"imageName\\\":\\\"${{ env.DOCKER_IMAGE }}:staging\\\"}\"}")
-
-          echo "Deploy response: $DEPLOY_RESPONSE"
-          echo "Frontend staging deployment triggered successfully"
+          # Cloudflare credentials
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The name of your Cloudflare Pages project
+          projectName: mfon-obong-frontend
+          # The folder containing the built React app
+          directory: dist
+          # Deploy to the staging branch — gets a preview URL like:
+          # staging.mfonobongenterprise.pages.dev
+          branch: staging
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
