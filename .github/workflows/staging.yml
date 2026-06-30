@@ -1,0 +1,48 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Cloudflare Pages (Staging)
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Staging API URLs — points to your staging backend on DigitalOcean
+          VITE_API_URL: ${{ secrets.STAGING_API_URL }}
+          VITE_LOGIN_API: ${{ secrets.STAGING_LOGIN_API }}
+          VITE_SOCKET_URL: ${{ secrets.STAGING_SOCKET_URL }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          # Cloudflare credentials
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The name of your Cloudflare Pages project
+          projectName: mfon-obong-frontend
+          # The folder containing the built React app
+          directory: dist
+          # Deploy to the staging branch — gets a preview URL like:
+          # staging.mfonobongenterprise.pages.dev
+          branch: staging
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
