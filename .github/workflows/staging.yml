@@ -1,0 +1,39 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Cloudflare Pages (Staging)
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Staging API URLs — points to your staging backend on DigitalOcean
+          VITE_API_URL: ${{ secrets.STAGING_API_URL }}
+          VITE_LOGIN_API: ${{ secrets.STAGING_LOGIN_API }}
+          VITE_SOCKET_URL: ${{ secrets.STAGING_SOCKET_URL }}
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy dist --project-name=mfon-obong-frontend --branch=staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
