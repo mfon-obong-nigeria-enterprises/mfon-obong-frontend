@@ -33,16 +33,8 @@ jobs:
           VITE_SOCKET_URL: ${{ secrets.STAGING_SOCKET_URL }}
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
-          # Cloudflare credentials
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # The name of your Cloudflare Pages project
-          projectName: mfon-obong-frontend
-          # The folder containing the built React app
-          directory: dist
-          # Deploy to the staging branch — gets a preview URL like:
-          # staging.mfonobongenterprise.pages.dev
-          branch: staging
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy dist --project-name=mfon-obong-frontend --branch=staging
