@@ -33,16 +33,8 @@ jobs:
           VITE_SOCKET_URL: ${{ secrets.PRODUCTION_SOCKET_URL }}
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
-          # Cloudflare credentials
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # The name of your Cloudflare Pages project
-          projectName: mfon-obong-frontend
-          # The folder containing the built React app
-          directory: dist
-          # Deploying to production branch maps to your custom domain:
-          # mfonobongenterprise.com
-          branch: production
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy dist --project-name=mfon-obong-frontend --branch=production
