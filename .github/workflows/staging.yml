@@ -36,7 +36,7 @@ jobs:
         run: |
           curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects" \
             -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-            -H "Content-Type: application/json" | jq '.result[].name'
+            -H "Content-Type: application/json"
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy dist --project-name=mfon-obong-frontend --branch=staging
