@@ -1,6 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { useQuery, QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
 import {
