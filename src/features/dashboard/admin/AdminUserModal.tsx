@@ -71,6 +71,8 @@ export default function AdminUserModal({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Get the user ID and handle undefined case
   const userId = adminData._id || adminData.id;
@@ -168,37 +170,52 @@ export default function AdminUserModal({
     }
   };
 
-  // File handling with proper error handling and success callback
+  // File handling — show preview only, upload on confirm
   const handleFileInputChange = (
     event: ChangeEvent<HTMLInputElement>
   ): void => {
     const files = event?.target.files;
-    const selectedFile = files && files.length > 0 ? files[0] : null;
+    const file = files && files.length > 0 ? files[0] : null;
 
-    if (!selectedFile) return;
+    if (!file) return;
 
-    if (!selectedFile.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    if (!userId) {
-      toast.error("User ID is required");
-      return;
-    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setSelectedFile(file);
+    // Reset the input so the same file can be re-selected if cancelled
+    event.target.value = "";
+  };
 
-    // Use the mutation with proper success handling
+  const handleUploadConfirm = (): void => {
+    if (!selectedFile || !userId) return;
+
     updateProfilePicture.mutate(
       { userId, imageFile: selectedFile },
       {
         onSuccess: () => {
           toast.success("Profile picture updated!");
-          // Invalidate the user query to refetch the latest data with the new URL
           queryClient.invalidateQueries({ queryKey: ["user", userId] });
-          queryClient.invalidateQueries({ queryKey: ["users"] }); // Also invalidate the list of all users
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+          setSelectedFile(null);
+        },
+        onError: () => {
+          toast.error("Failed to upload profile picture. Please try again.");
         },
       }
     );
+  };
+
+  const handleUploadCancel = (): void => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setSelectedFile(null);
   };
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>): void => {
@@ -231,28 +248,16 @@ export default function AdminUserModal({
       return;
     }
 
-    if (!userId) {
-      toast.error("User ID is required");
-      return;
-    }
-
-    // Use the mutation with proper success handling
-    updateProfilePicture.mutate(
-      { userId, imageFile: file },
-      {
-        onSuccess: () => {
-          toast.success("Profile picture updated!");
-          // Invalidate the user query to refetch the latest data with the new URL
-          queryClient.invalidateQueries({ queryKey: ["user", userId] });
-          queryClient.invalidateQueries({ queryKey: ["users"] }); // Also invalidate the list of all users
-        },
-      }
-    );
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setSelectedFile(file);
   };
 
-  // Current profile picture comes from userProfile or fallback to adminData
-  const currentProfilePicture =
-    userProfile?.profilePicture || adminData.profilePicture;
+  // Show preview if selected, otherwise show stored picture (only if it's a valid Cloudinary URL)
+  const storedPicture = userProfile?.profilePicture || adminData.profilePicture;
+  const isValidCloudinaryUrl = storedPicture?.includes("res.cloudinary.com");
+  const currentProfilePicture = isValidCloudinaryUrl ? storedPicture : null;
+  const displayPicture = previewUrl || currentProfilePicture;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -272,16 +277,15 @@ export default function AdminUserModal({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              {currentProfilePicture ? (
+              {displayPicture ? (
                 <img
-                  src={currentProfilePicture}
+                  src={displayPicture}
                   alt=""
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    // Prevent an infinite loop if the fallback image also fails
                     target.onerror = null;
-                    target.src = "https://res.cloudinary.com/startng-slack-com/image/upload/v1751994022/profile_pictures/user_686bb38aebc3f31c75393686.jpg";
+                    target.style.display = "none";
                   }}
                 />
               ) : (
@@ -292,28 +296,30 @@ export default function AdminUserModal({
                   </span>
                 </div>
               )}
-              <label
-                htmlFor="profile-upload"
-                className={`absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white cursor-pointer ${
-                  updateProfilePicture.isPending
-                    ? "opacity-100"
-                    : "opacity-0 hover:opacity-100"
-                } transition-opacity duration-300 rounded-full`}
-              >
-                {updateProfilePicture.isPending ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <Camera className="w-6 h-6" />
-                )}
-                <span className="sr-only">Choose photo from file</span>
-              </label>
+              {!previewUrl && (
+                <label
+                  htmlFor="profile-upload"
+                  className={`absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 text-white cursor-pointer ${
+                    updateProfilePicture.isPending
+                      ? "opacity-100"
+                      : "opacity-0 hover:opacity-100"
+                  } transition-opacity duration-300 rounded-full`}
+                >
+                  {updateProfilePicture.isPending ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <Camera className="w-6 h-6" />
+                  )}
+                  <span className="sr-only">Choose photo from file</span>
+                </label>
+              )}
               <input
                 id="profile-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleFileInputChange}
                 className="hidden"
-                disabled={updateProfilePicture.isPending}
+                disabled={updateProfilePicture.isPending || !!previewUrl}
               />
             </div>
 
@@ -324,6 +330,33 @@ export default function AdminUserModal({
               <p className="hidden md:block text-sm text-gray-600">
                 {adminData.userRole || "Admin"}
               </p>
+              {previewUrl && (
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleUploadConfirm}
+                    disabled={updateProfilePicture.isPending}
+                    className="bg-[#2ECC71] hover:bg-[#28B463] text-white text-xs px-3 py-1"
+                  >
+                    {updateProfilePicture.isPending ? (
+                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Uploading...</>
+                    ) : (
+                      "Upload Photo"
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUploadCancel}
+                    disabled={updateProfilePicture.isPending}
+                    className="text-xs px-3 py-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
