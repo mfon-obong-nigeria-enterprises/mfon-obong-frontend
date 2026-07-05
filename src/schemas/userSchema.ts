@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().min(1, "Phone number is required"),
+  phone: z.string().min(1, "Phone number is required").regex(/^\+?\d+$/, "Phone number must contain numbers only"),
   email: z.string().email("Email is required"),
   address: z.string().min(1, "Address is required"),
   role: z.enum(["STAFF", "ADMIN", "MAINTAINER", "SUPER_ADMIN"], {

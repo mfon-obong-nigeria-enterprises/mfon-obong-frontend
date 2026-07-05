@@ -143,12 +143,17 @@ const CreateUserModal = ({ closeModal }: { closeModal: () => void }) => {
               Phone number
             </label>
             <Input
-              type="text"
+              type="tel"
               id="userphonenumber"
               {...register("phone")}
               disabled={mutation.isPending}
               aria-invalid={!!errors.phone}
               placeholder="Enter user phone number"
+              onKeyDown={(e) => {
+                if (!/[\d+\b]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className={`text-[#7D7D7D] md:text-sm ${
                 errors.phone
                   ? "border-[var(--cl-error)]"
