@@ -24,6 +24,7 @@ import { Search } from "lucide-react";
 
 // stores
 import { useTransactionsStore } from "@/stores/useTransactionStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // hooks
 import usePagination from "@/hooks/usePagination";
@@ -35,6 +36,7 @@ const StaffSales = () => {
   const transactions = useTransactionsStore(
     (state) => state.transactions ?? []
   );
+  const { user } = useAuthStore();
 
   const [filter, setFilter] = useState<"today" | "week" | "month" | "all">(
     "today"
@@ -47,6 +49,10 @@ const StaffSales = () => {
     const query = searchQuery.trim().toLowerCase();
 
     const filtered = transactions?.filter((tx) => {
+      // Only show this staff member's own transactions
+      const txUserId = (tx.userId as any)?._id || (tx.userId as any);
+      if (user?.id && txUserId !== user.id) return false;
+
       const txDate = getTransactionDate(tx);
 
       // Date filter
