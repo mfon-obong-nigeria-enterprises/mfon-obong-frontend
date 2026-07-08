@@ -23,7 +23,6 @@ import { Search } from "lucide-react";
 
 // stores
 import { useTransactionsStore } from "@/stores/useTransactionStore";
-import { useAuthStore } from "@/stores/useAuthStore";
 
 // hooks
 import usePagination from "@/hooks/usePagination";
@@ -35,7 +34,6 @@ const StaffSales = () => {
   const transactions = useTransactionsStore(
     (state) => state.transactions ?? []
   );
-  const { user } = useAuthStore();
 
   const [filter, setFilter] = useState<"today" | "week" | "month" | "all">(
     "all"
