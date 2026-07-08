@@ -15,7 +15,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // icons
 import { VscRefresh } from "react-icons/vsc";
@@ -24,7 +23,6 @@ import { Search } from "lucide-react";
 
 // stores
 import { useTransactionsStore } from "@/stores/useTransactionStore";
-import { useAuthStore } from "@/stores/useAuthStore";
 
 // hooks
 import usePagination from "@/hooks/usePagination";
@@ -36,10 +34,9 @@ const StaffSales = () => {
   const transactions = useTransactionsStore(
     (state) => state.transactions ?? []
   );
-  const { user } = useAuthStore();
 
   const [filter, setFilter] = useState<"today" | "week" | "month" | "all">(
-    "today"
+    "all"
   );
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -49,9 +46,7 @@ const StaffSales = () => {
     const query = searchQuery.trim().toLowerCase();
 
     const filtered = transactions?.filter((tx) => {
-      // Only show this staff member's own transactions
-      const txUserId = (tx.userId as any)?._id || (tx.userId as any);
-      if (user?.id && txUserId !== user.id) return false;
+
 
       const txDate = getTransactionDate(tx);
 
@@ -166,76 +161,33 @@ const StaffSales = () => {
       </div>
 
       {/* sales activity */}
-      <section className="md:bg-white md:border rounded-[10px] mt-5 overflow-hidden">
-        <div className="flex justify-between items-center h-[72px] border px-2 md:px-10 py-6">
-          <h4 className="hidden md:block font-medium text-lg text-[#1E1E1E] font-Inter">
+      <section className="bg-white border border-[#D9D9D9] rounded-[10px] mt-5 overflow-hidden">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b px-4 md:px-10 py-6">
+          <h4 className="font-medium text-lg text-[#1E1E1E] font-Inter">
             Your Sales Activity
           </h4>
-          <div className="flex gap-3 items-center">
+          <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
             {["today", "week", "month", "all"].map((f) => (
-              <p
+              <button
                 key={f}
                 onClick={() =>
                   setFilter(f as "today" | "week" | "month" | "all")
                 }
-                className={`cursor-pointer px-5 py-3 rounded-[2px] text-sm font-Inter  hidden md:block ${
+                className={`cursor-pointer px-4 py-2 rounded-[6px] text-sm font-Inter font-medium transition-all ${
                   filter === f
                     ? "bg-[#D8E5FE] text-[#3D80FF]"
-                    : "bg-transparent text-[#444444]"
+                    : "bg-transparent text-[#444444] hover:bg-gray-50"
                 }`}
               >
                 {f === "today"
                   ? "Today"
                   : f === "week"
-                  ? "This week"
+                  ? "This Week"
                   : f === "month"
                   ? "This Month"
                   : "All"}
-              </p>
+              </button>
             ))}
-            <div className="md:hidden w-full">
-              <Tabs
-                value={filter}
-                onValueChange={(val) =>
-                  setFilter(val as "today" | "week" | "month" | "all")
-                }
-              >
-                <TabsList className="grid grid-cols-4 w-full md:hidden">
-                  <TabsTrigger
-                    value="today"
-                    className="w-full px-5 py-3 text-sm font-Inter 
-                 data-[state=active]:bg-[#3D80FF] data-[state=active]:text-white 
-                 data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#444444]"
-                  >
-                    Today
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="week"
-                    className="w-full px-5 py-3 text-sm font-Inter 
-                  data-[state=active]:bg-[#3D80FF] data-[state=active]:text-white 
-                  data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#444444]"
-                  >
-                    This Week
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="month"
-                    className="w-full px-5 py-3 text-sm font-Inter 
-                 data-[state=active]:bg-[#3D80FF] data-[state=active]:text-white 
-                 data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#444444]"
-                  >
-                    This Month
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="all"
-                    className="w-full px-5 py-3 text-sm font-Inter 
-                 data-[state=active]:bg-[#3D80FF] data-[state=active]:text-white 
-                 data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#444444]"
-                  >
-                    All
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
           </div>
         </div>
 
