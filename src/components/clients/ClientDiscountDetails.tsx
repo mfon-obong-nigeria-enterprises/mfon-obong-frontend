@@ -100,26 +100,6 @@ const ClientDiscountDetails: React.FC<ClientDiscountDetailsProps> = ({
                 )}
               </div>
 
-              <div>
-                <p>Discount Breakdown: </p>
-                <ul className="text-sm text-[#7D7D7D]">
-                  {txn.items?.map((item, itemIndex) => (
-                    <li key={`${item.productId}-${itemIndex}`}>
-                      <div className="flex items-center sm:justify-between justify-start py-2 gap-4">
-                        <p>
-                          {item.productName}({item.quantity}X):
-                          {formatCurrency(item.unitPrice)}
-                        </p>
-                        {item.discount ? (
-                          <p>{formatCurrency(item.discount)}</p>
-                        ) : (
-                          <p>(No item discount)</p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
 
               <div className="mt-4 border-l-5 border-[#2ECC71] pl-4 bg-[#E2F3EB] p-4 rounded-md">
                 <p className="text-[#333333] font-normal text-[16px] font-Inter">
@@ -151,7 +131,7 @@ const ClientDiscountDetails: React.FC<ClientDiscountDetailsProps> = ({
                 <p className="text-xs text-[#444444] font-normal font-Inter">
                   Applied by: {txn.userId?.name || "Unknown"}
                 </p>
-              </div>
+              </div> 
             </li>
           ))}
         </ul>
