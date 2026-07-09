@@ -134,7 +134,7 @@ const BusinessReport = () => {
         description="Here’s a breakdown of your business performance"
       />
       
-      <Stats data={stats} />
+      <Stats data={stats} columns={3} />
 
       <div className="mt-2">
         <TotalRevenueTrends />
@@ -147,11 +147,11 @@ const BusinessReport = () => {
         <MonthlySalesChart />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 items-start justify-center gap-5 mt-2">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-5 items-stretch gap-5 mt-2">
+        <div className="lg:col-span-3 h-full">
           <TopSellingProducts />
         </div>
-        <div className="bg-white border border-[#d9d9d9] rounded-xl lg:col-span-2">
+        <div className="bg-white border border-[#d9d9d9] rounded-xl lg:col-span-2 h-full">
           <SalesByCategoryChart />
         </div>
       </div>
