@@ -281,11 +281,11 @@ export default function RevenueAnalytics() {
         )}
 
         {/* Loading State */}
-        {isLoading ? <LoadingSkeleton /> : <Stats data={stats} />}
+        {isLoading ? <LoadingSkeleton /> : <Stats data={stats} columns={3} />}
 
         <div className="space-y-4 sm:space-y-6">
           {/* Charts Section */}
-          <div className="grid md:grid-cols-1 xl:grid-cols-6 lg:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid md:grid-cols-1 xl:grid-cols-6 lg:grid-cols-5 gap-4 sm:gap-6 items-stretch">
             <div className="w-full xl:col-span-4 lg:col-span-3 space-y-4 sm:space-y-6">
               {/* Monthly Revenue Trend */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
@@ -432,10 +432,10 @@ export default function RevenueAnalytics() {
   )}
 </div>
 </div>
-            <div className="w-full xl:col-span-2 lg:col-span-2 space-y-4 sm:space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-1 gap-4">
+            <div className="w-full xl:col-span-2 lg:col-span-2 lg:h-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col lg:h-full gap-4 sm:gap-6">
                 {/* Revenue by Payment Method */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm lg:flex-1">
                   <h3 className="text-[16px] lg:text-lg font-semibold text-gray-900 mb-2">
                     Revenue by Payment Method
                   </h3>
@@ -471,7 +471,7 @@ export default function RevenueAnalytics() {
                 </div>
 
                 {/* Discount Impact */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm flex flex-col lg:flex-1">
                   <h3 className="lg:text-lg text-[16px] font-semibold text-gray-900 mb-4">
                     Discount Impact
                   </h3>
@@ -545,10 +545,9 @@ export default function RevenueAnalytics() {
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-4 sm:space-y-6">
+
                 {/* Product Margin */}
-                <div className="bg-white rounded-xl border border-gray-200 p-2 sm:p-6 shadow-sm relative">
+                <div className="bg-white rounded-xl border border-gray-200 p-2 sm:p-6 shadow-sm relative md:col-span-2 lg:flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 pl-3 sm:pl-0">
                     Product Margin
                   </h3>

@@ -268,14 +268,13 @@ export default function UpdateStock({
                   </div>
                   <Button
                     size="sm"
-                    variant="outline"
                     onClick={applyBulkQuantity}
                     disabled={
                       selectedCount === 0 ||
                       bulkQuantity === "" ||
                       isNaN(parseInt(bulkQuantity, 10))
                     }
-                    className="bg-emerald-500 text-white hover:bg-green-500 hover:text-white w-full md:w-auto"
+                    className="bg-emerald-500 text-white hover:bg-green-600 w-full md:w-auto"
                   >
                     Apply
                   </Button>

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronUp } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -1096,7 +1096,6 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
             className="bg-white hover:bg-gray-100 text-text-dark border border-[#7D7D7D] font-medium px-4 hover:text-[#2E6EF7] hover:shadow-sm hover:-translate-y-[1px]"
             onClick={handleExportPDF}
           >
-            <ChevronUp />
             <span>Export data</span>
           </Button>
           {isSuperAdmin && (
