@@ -73,7 +73,7 @@ const getRoleBasedCapabilities = (role: string) => {
     canAccessUserProfiles: ["ADMIN", "SUPER_ADMIN", "MAINTAINER"].includes(
       normalizedRole
     ),
-    modalType: ["ADMIN", "STAFF"].includes(normalizedRole)
+    modalType: ["ADMIN", "STAFF", "SUPER_ADMIN"].includes(normalizedRole)
       ? "admin"
       : "manager",
   };
