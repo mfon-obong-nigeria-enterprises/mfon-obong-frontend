@@ -58,9 +58,9 @@ const UserSearchList: React.FC<SearchAndFilterProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row justify-between gap-4 px-4 py-5 font-sans w-full overflow-x-auto">
+    <div className="flex flex-col lg:flex-row items-center gap-3 px-4 py-5 font-sans w-full overflow-x-auto">
       {/* Search Input */}
-      <div className="relative lg:w-auto md:w-full flex-shrink-0">
+      <div className="relative w-full lg:flex-1">
         <span className="absolute left-3 inset-y-0 my-auto flex items-center text-muted-foreground">
           <Search className="size-5" />
         </span>
@@ -73,15 +73,14 @@ const UserSearchList: React.FC<SearchAndFilterProps> = ({
         />
       </div>
 
-
       {/* Filters row */}
-      <div className="flex flex-nowrap gap-2 items-center justify-start md:justify-between w-full lg:justify-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex flex-nowrap gap-2 items-center justify-start overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {/* Role Filter */}
         <Select
           value={selectedRole}
           onValueChange={(value) => handleFilterChange("role", value)}
         >
-          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[150px] flex-shrink-0">
+          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[145px] flex-shrink-0">
             <Users className="size-4 text-muted-foreground" />
             <span className="truncate">
               {selectedRole === "all" ? "All Roles" : selectedRole}
@@ -100,36 +99,34 @@ const UserSearchList: React.FC<SearchAndFilterProps> = ({
         </Select>
 
         {/* Location Filter */}
-          <Select
-            value={selectedLocation}
-            onValueChange={(value) => handleFilterChange("location", value)}
-          >
-            <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[150px] flex-shrink-0">
-              <MapPin className="size-4 text-muted-foreground" />
-              <span className="truncate">
-                {selectedLocation === "all"
-                  ? "All Locations"
-                  : selectedLocation}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <Select
+          value={selectedLocation}
+          onValueChange={(value) => handleFilterChange("location", value)}
+        >
+          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[160px] flex-shrink-0">
+            <MapPin className="size-4 text-muted-foreground" />
+            <span className="truncate">
+              {selectedLocation === "all" ? "All Locations" : selectedLocation}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">All Locations</SelectItem>
+              {locations.map((loc) => (
+                <SelectItem key={loc} value={loc}>
+                  {loc}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
 
         {/* Date Filter */}
         <Select
           value={selectedDateRange}
           onValueChange={(value) => handleFilterChange("dateRange", value)}
         >
-          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[150px] flex-shrink-0">
+          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[145px] flex-shrink-0">
             <CalendarDays className="size-4 text-muted-foreground" />
             <span className="truncate">
               {selectedDateRange === "all"
@@ -155,7 +152,7 @@ const UserSearchList: React.FC<SearchAndFilterProps> = ({
           value={selectedStatus}
           onValueChange={(value) => handleFilterChange("status", value)}
         >
-          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[150px] flex-shrink-0">
+          <SelectTrigger className="flex items-center gap-2 py-5 px-2 rounded-lg border border-[#E0E0E0] bg-white! text-[#444] text-sm font-medium w-[145px] flex-shrink-0">
             <Zap className="size-4 text-muted-foreground fill-[#7D7D7D]" />
             <span className="truncate">
               {selectedStatus === "all" ? "All Status" : selectedStatus}

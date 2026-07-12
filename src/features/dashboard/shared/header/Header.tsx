@@ -37,23 +37,25 @@ const useProfilePicture = (userRole?: string) => {
 
   useEffect(() => {
     const getProfileImageUrl = (): string => {
-      // Priority order for profile picture sources
-      const sources = [
-        userProfile?.profilePicture,
+      const isValidCloudinary = (url?: string | null): boolean =>
+        !!url && url.trim() !== "" && url.includes("res.cloudinary.com");
 
-        // Fallback to localStorage for persistence
-        localStorage.getItem(`user-profile-picture-${user?.id}`),
-      ];
-
-      // Return first valid source
-      for (const source of sources) {
-        if (source && source.trim() !== "") {
-          return source;
-        }
+      // Only accept Cloudinary URLs to prevent stale MongoDB ghost images
+      if (isValidCloudinary(userProfile?.profilePicture)) {
+        return userProfile!.profilePicture!;
       }
 
-      // Final fallback to default avatar
-      return `/images/${userRole}-avatar.png`;
+      const cached = localStorage.getItem(`user-profile-picture-${user?.id}`);
+      if (isValidCloudinary(cached)) {
+        return cached!;
+      }
+
+      // Clear stale non-Cloudinary entry from localStorage
+      if (cached && !isValidCloudinary(cached) && user?.id) {
+        localStorage.removeItem(`user-profile-picture-${user.id}`);
+      }
+
+      return "";
     };
 
     setProfileImageUrl(getProfileImageUrl());
@@ -127,15 +129,12 @@ const Header = ({ userRole }: HeaderProps) => {
   const handleImageError = (
     e: React.SyntheticEvent<HTMLImageElement, Event>
   ) => {
-    console.warn("Failed to load profile image:", profileImageUrl);
     const img = e.target as HTMLImageElement;
-
-    // Try fallback image
-    if (img.src !== `/images/${userRole}-avatar.png`) {
-      img.src = `/images/${userRole}-avatar.png`;
-    } else {
-      // Hide broken image
-      img.style.display = "none";
+    img.onerror = null;
+    img.style.display = "none";
+    // Clear stale cached URL so the fallback initials show next time
+    if (user?.id) {
+      localStorage.removeItem(`user-profile-picture-${user.id}`);
     }
   };
 
@@ -220,7 +219,7 @@ const Header = ({ userRole }: HeaderProps) => {
             className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
             aria-label="User settings"
           >
-            <Avatar key={`${profileImageUrl}-${Date.now()}`}>
+            <Avatar key={profileImageUrl}>
               <AvatarImage
                 src={profileImageUrl}
                 alt={`${user?.name || userRole} avatar`}

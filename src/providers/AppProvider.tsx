@@ -1,6 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { useQuery, QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
 import {
@@ -114,9 +113,24 @@ const AppDataProvider = ({ children }: { children: ReactNode }) => {
     enabled: !isAuthLoading && !!user && user.role !== "STAFF",
   });
 
-  // Run initAuth exactly once on mount to restore session from cookies/localStorage
+  // Attempt silent session restore on mount, but only when not already authenticated
   useEffect(() => {
-    if (initAuth) initAuth().catch(() => {});
+    const { isAuthenticated } = useAuthStore.getState();
+
+    if (isAuthenticated) {
+      // Session already restored from persisted store — skip the refresh call
+      useAuthStore.setState({ loading: false });
+      return;
+    }
+
+    // Not authenticated: try to restore from cookie/localStorage token
+    const hasStoredToken = !!localStorage.getItem("__mfon_refresh_token");
+    if (initAuth && hasStoredToken) {
+      initAuth().catch(() => {});
+    } else {
+      // Nothing to restore — clear loading so the app renders the login page
+      useAuthStore.setState({ loading: false });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,6 +1,7 @@
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, QueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 
 import { createNewUser } from "@/services/userService";
 import { createUserSchema } from "@/schemas/userSchema";
@@ -48,7 +49,10 @@ const CreateUserModal = ({ closeModal }: { closeModal: () => void }) => {
       reset();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create user");
+      const message = isAxiosError(error)
+        ? error.response?.data?.message || error.response?.data?.error?.message || "Failed to create user"
+        : "Failed to create user";
+      toast.error(message);
     },
   });
 
@@ -139,12 +143,17 @@ const CreateUserModal = ({ closeModal }: { closeModal: () => void }) => {
               Phone number
             </label>
             <Input
-              type="text"
+              type="tel"
               id="userphonenumber"
               {...register("phone")}
               disabled={mutation.isPending}
               aria-invalid={!!errors.phone}
               placeholder="Enter user phone number"
+              onKeyDown={(e) => {
+                if (!/[\d+\b]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className={`text-[#7D7D7D] md:text-sm ${
                 errors.phone
                   ? "border-[var(--cl-error)]"

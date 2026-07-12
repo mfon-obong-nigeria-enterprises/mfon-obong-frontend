@@ -201,12 +201,12 @@ export function ManagerUsersModal({
     });
   };
 
-  // Current display image - show optimistic update if available
+  // Only use stored picture if it's a valid Cloudinary URL (prevents stale MongoDB ghost images)
+  const storedPicture = userProfile?.profilePicture || profileData.profilePicture || userData.profilePicture;
+  const validStoredPicture = storedPicture?.includes("res.cloudinary.com") ? storedPicture : null;
   const displayImage = profileData.image
     ? URL.createObjectURL(profileData.image)
-    : userProfile?.profilePicture ||
-      profileData.profilePicture ||
-      userData.profilePicture;
+    : validStoredPicture;
 
   const isLoading = updateProfile.isPending;
 

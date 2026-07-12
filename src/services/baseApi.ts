@@ -105,8 +105,12 @@ api.interceptors.response.use(
 
     // If 401 and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Never try to refresh the refresh endpoint itself — that would cause a deadlock
-      if (originalRequest.url?.includes('/auth/refresh')) {
+      // Never try to refresh auth endpoints — refresh would cause a deadlock,
+      // and logout 401s should clear the session locally without a redirect
+      if (
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.url?.includes('/auth/logout')
+      ) {
         return Promise.reject(error);
       }
 
