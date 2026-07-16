@@ -567,7 +567,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                   <SelectContent>
                     {getAvailableVariants(selectedProduct, index, row).map((v) => (
                       <SelectItem key={v.id} value={v.id} className="text-xs">
-                        {v.name} — ₦{v.unitPrice.toLocaleString()} ({v.stock} left)
+                        {v.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -641,7 +641,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                           <SelectContent position="popper">
                             {getAvailableVariants(selectedProduct, index, row).map((v) => (
                               <SelectItem key={v.id} value={v.id} className="text-xs">
-                                {v.name} — ₦{v.unitPrice.toLocaleString()} ({v.stock} left)
+                                {v.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

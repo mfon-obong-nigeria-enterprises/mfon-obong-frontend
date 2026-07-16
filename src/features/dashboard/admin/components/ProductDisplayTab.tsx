@@ -1,6 +1,6 @@
 /** @format */
 import { useState, useEffect } from "react"; // Added useEffect
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 // import { toast } from "sonner";
 import { toast } from "react-toastify";
@@ -107,7 +107,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
       unitPrice: product.unitPrice,
       minStockLevel: product.minStockLevel,
     },
-    resolver: zodResolver(newProductSchema),
+    resolver: zodResolver(newProductSchema) as unknown as Resolver<NewProduct>,
   });
 
   useEffect(() => {

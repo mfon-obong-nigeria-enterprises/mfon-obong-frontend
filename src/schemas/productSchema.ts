@@ -5,13 +5,15 @@ import { z } from "zod";
 const nanToUndefined = (v: unknown) =>
   typeof v === "number" && isNaN(v) ? undefined : v;
 
-const optionalNum = z.preprocess(nanToUndefined, z.number().min(0).optional());
+// Cast is required: z.preprocess infers output as `unknown` in TypeScript,
+// but at runtime it produces the correct value. The cast restores the proper type.
+const optionalNum = z.preprocess(nanToUndefined, z.number().min(0).optional()) as z.ZodType<number | undefined>;
 
 const variantSchema = z.object({
   name: z.string().min(1, { message: "Enter grade name" }),
-  unitPrice: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter price" })),
-  stock: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter quantity" })),
-  minStockLevel: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter min level" })),
+  unitPrice: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter price" })) as z.ZodType<number>,
+  stock: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter quantity" })) as z.ZodType<number>,
+  minStockLevel: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter min level" })) as z.ZodType<number>,
 });
 
 export const newProductSchema = z
@@ -43,4 +45,20 @@ export const newProductSchema = z
     }
   });
 
-export type NewProductFormValues = z.infer<typeof newProductSchema>;
+// Explicit type because z.preprocess() infers output as `unknown` in TypeScript,
+// even though the runtime values are correctly typed numbers.
+export type NewProductFormValues = {
+  name: string;
+  categoryId: string;
+  unit: string;
+  hasVariants: boolean;
+  unitPrice?: number;
+  stock?: number;
+  minStockLevel?: number;
+  variants?: {
+    name: string;
+    unitPrice: number;
+    stock: number;
+    minStockLevel: number;
+  }[];
+};

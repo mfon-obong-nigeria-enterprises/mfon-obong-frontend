@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { type AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
-import { useForm, Controller, useWatch, useFieldArray } from "react-hook-form";
+import { useForm, Controller, useWatch, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useInventoryStore } from "@/stores/useInventoryStore";
 import { createProduct } from "@/services/productService";
@@ -39,7 +39,7 @@ const AddProduct = () => {
     watch,
     formState: { errors },
   } = useForm<NewProductFormValues>({
-    resolver: zodResolver(newProductSchema),
+    resolver: zodResolver(newProductSchema) as unknown as Resolver<NewProductFormValues>,
     defaultValues: { hasVariants: false, variants: [] },
   });
 
