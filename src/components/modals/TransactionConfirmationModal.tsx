@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty, isBundleItem } from "@/utils/itemDisplay";
 
 export type TransactionItem = {
   productName: string;
@@ -10,6 +10,8 @@ export type TransactionItem = {
   quantity: number;
   unitPrice: number;
   unit?: string;
+  bundlesQty?: number;
+  kgQty?: number;
 };
 
 export type TransactionConfirmationData = {
@@ -185,7 +187,9 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="py-3 px-4 text-gray-900">{itemDisplayName(item.productName, item.variantName)}</td>
                       <td className="py-3 px-4 text-right text-gray-700">
-                        {item.quantity} {item.unit || "pcs"}
+                        {isBundleItem(item.bundlesQty, item.kgQty)
+                          ? formatBundleQty(item.bundlesQty, item.kgQty)
+                          : `${item.quantity} ${item.unit || "pcs"}`}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-700">
                         {formatCurrency(item.unitPrice)}
@@ -206,12 +210,14 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-medium text-gray-900 text-sm">{itemDisplayName(item.productName, item.variantName)}</span>
                     <span className="text-xs text-gray-500">
-                      {item.quantity} {item.unit || "pcs"}
+                      {isBundleItem(item.bundlesQty, item.kgQty)
+                        ? formatBundleQty(item.bundlesQty, item.kgQty)
+                        : `${item.quantity} ${item.unit || "pcs"}`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">
-                      {formatCurrency(item.unitPrice)} × {item.quantity}
+                      {formatCurrency(item.unitPrice)} × {isBundleItem(item.bundlesQty, item.kgQty) ? formatBundleQty(item.bundlesQty, item.kgQty) : item.quantity}
                     </span>
                     <span className="font-semibold text-gray-900">
                       {formatCurrency(item.quantity * item.unitPrice)}

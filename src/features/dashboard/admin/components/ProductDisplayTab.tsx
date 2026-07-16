@@ -97,7 +97,6 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
   } = useForm<NewProduct>({
     defaultValues: {
       name: product.name,
-      // Ensure categoryId is a string ID for default value when initializing the form
       categoryId:
         typeof product.categoryId === "object"
           ? product.categoryId._id
@@ -106,6 +105,9 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
       stock: product.stock,
       unitPrice: product.unitPrice,
       minStockLevel: product.minStockLevel,
+      isBundleProduct: product.isBundleProduct ?? false,
+      bundleSize: product.bundleSize,
+      subUnit: product.subUnit,
     },
     resolver: zodResolver(newProductSchema) as unknown as Resolver<NewProduct>,
   });
@@ -486,6 +488,54 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             />
             {errors.minStockLevel && <p className="text-red-500 text-xs">{errors.minStockLevel.message}</p>}
           </div>
+        </div>
+
+        {/* Bundle product config */}
+        <div className="border-t pt-3 mt-2 space-y-3">
+          <div className="flex items-center gap-3">
+            <Controller
+              name="isBundleProduct"
+              control={control}
+              render={({ field }) => (
+                <button
+                  type="button"
+                  onClick={() => field.onChange(!field.value)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${field.value ? "bg-[#2ECC71]" : "bg-gray-300"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${field.value ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              )}
+            />
+            <label className="text-xs text-[#555]">Sells in bundles + sub-units (e.g. bundles + kg)</label>
+          </div>
+          <Controller
+            name="isBundleProduct"
+            control={control}
+            render={({ field: bundleField }) =>
+              bundleField.value ? (
+                <div className="flex gap-4 pl-14">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500">Sub-units per bundle</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...register("bundleSize", { valueAsNumber: true })}
+                      placeholder="e.g. 20"
+                      className="w-28 h-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500">Sub-unit name</label>
+                    <Input
+                      {...register("subUnit")}
+                      placeholder="e.g. kg"
+                      className="w-24 h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              ) : null
+            }
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-8 mt-5">

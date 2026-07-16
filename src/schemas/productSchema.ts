@@ -22,6 +22,9 @@ export const newProductSchema = z
     categoryId: z.string().min(1, { message: "Choose a category" }),
     unit: z.string().min(1, { message: "Choose a unit" }),
     hasVariants: z.boolean().default(false),
+    isBundleProduct: z.boolean().default(false),
+    bundleSize: z.preprocess(nanToUndefined, z.number().min(1).optional()) as z.ZodType<number | undefined>,
+    subUnit: z.string().optional(),
     unitPrice: optionalNum,
     stock: optionalNum,
     minStockLevel: optionalNum,
@@ -52,6 +55,9 @@ export type NewProductFormValues = {
   categoryId: string;
   unit: string;
   hasVariants: boolean;
+  isBundleProduct?: boolean;
+  bundleSize?: number;
+  subUnit?: string;
   unitPrice?: number;
   stock?: number;
   minStockLevel?: number;

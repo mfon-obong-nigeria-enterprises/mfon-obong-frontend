@@ -47,6 +47,7 @@ const AddProduct = () => {
 
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
   const hasVariants = watch("hasVariants");
+  const isBundleProduct = watch("isBundleProduct");
 
   useEffect(() => {
     if (selectedCategoryId && categories.length > 0) {
@@ -202,6 +203,50 @@ const AddProduct = () => {
             <Label className="text-[#333333] text-sm cursor-pointer">
               This product has multiple grades / variants
             </Label>
+          </div>
+
+          {/* Bundle Product Toggle */}
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setValue("isBundleProduct", !isBundleProduct)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isBundleProduct ? "bg-[#2ECC71]" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isBundleProduct ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <Label className="text-[#333333] text-sm cursor-pointer">
+                This product sells in bundles + sub-units (e.g. bundles + kg)
+              </Label>
+            </div>
+            {isBundleProduct && (
+              <div className="flex gap-4 pl-14">
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-[#555]">Sub-units per bundle</Label>
+                  <Input
+                    {...register("bundleSize", { valueAsNumber: true })}
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 20"
+                    className="w-28"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-[#555]">Sub-unit name</Label>
+                  <Input
+                    {...register("subUnit")}
+                    placeholder="e.g. kg"
+                    className="w-24"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Standard fields (no variants) */}

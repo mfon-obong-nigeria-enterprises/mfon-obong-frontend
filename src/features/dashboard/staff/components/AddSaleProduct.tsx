@@ -28,7 +28,7 @@ import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 // utils
 import { formatCurrency } from "@/utils/styles";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty } from "@/utils/itemDisplay";
 
 // type
 import type { Row } from "../NewSales";
@@ -331,10 +331,25 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
         unitPrice: product.hasVariants ? 0 : (product.unitPrice || 0),
         unit: product.unit || "pcs",
         productName: product.name || "",
+        bundlesQty: undefined,
+        kgQty: undefined,
+        quantity: product.isBundleProduct ? 0 : 1,
       });
     } else {
-      updateRow(index, { productId: "", variantId: "", variantName: "", unitPrice: 0, unit: "", productName: "" });
+      updateRow(index, { productId: "", variantId: "", variantName: "", unitPrice: 0, unit: "", productName: "", bundlesQty: undefined, kgQty: undefined });
     }
+  };
+
+  const handleBundleChange = (index: number, bundlesQty: number, kgQty: number) => {
+    const product = products.find((p) => p._id === rows[index].productId);
+    const bundleSize = product?.bundleSize || 20;
+    const maxStock = product?.stock || 0;
+    const totalBundles = bundlesQty + kgQty / bundleSize;
+    if (salesType === "Retail" && totalBundles > maxStock && maxStock > 0) {
+      toast.warn(`Only ${maxStock} bundles available in stock`);
+      return;
+    }
+    updateRow(index, { bundlesQty, kgQty, quantity: totalBundles });
   };
 
   const handleVariantChange = (index: number, variantId: string) => {
@@ -490,6 +505,35 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
 
                 {/* Quantity */}
                 <div className="w-[16%]">
+                  {selectedProduct?.isBundleProduct ? (
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-0.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={Math.floor(maxQuantity)}
+                          value={row.bundlesQty ?? ""}
+                          placeholder="bun"
+                          onChange={(e) => handleBundleChange(index, e.target.value === "" ? 0 : Number(e.target.value), row.kgQty ?? 0)}
+                          className="w-1/2 h-[28px] border border-[#E5E7EB] rounded text-center text-[9px] outline-none bg-white"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={(selectedProduct.bundleSize || 20) - 1}
+                          value={row.kgQty ?? ""}
+                          placeholder="kg"
+                          onChange={(e) => handleBundleChange(index, row.bundlesQty ?? 0, e.target.value === "" ? 0 : Number(e.target.value))}
+                          className="w-1/2 h-[28px] border border-[#E5E7EB] rounded text-center text-[9px] outline-none bg-white"
+                        />
+                      </div>
+                      {(row.bundlesQty || row.kgQty) ? (
+                        <p className="text-[8px] text-gray-400 text-center leading-tight">
+                          {formatBundleQty(row.bundlesQty, row.kgQty)}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
                     <input
                       type="number"
                       max={maxQuantity}
@@ -511,6 +555,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                       }}
                       className="w-full h-[34px] border border-[#E5E7EB] rounded text-center text-[11px] outline-none bg-white focus:ring-1 focus:ring-gray-200"
                     />
+                  )}
                 </div>
 
                 {/* Unit Price */}
@@ -650,39 +695,64 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                     </TableCell>
 
                     {/* Quantity input */}
-                    <TableCell className="w-[75px] md:w-[100px]">
-                      <Input
-                        type="number"
-                        max={maxQuantity}
-                        value={row.quantity === 0 ? "" : row.quantity} // allow clearing zero
-                        onChange={(e) => {
-                          const value = e.target.value;
-
-                          if (value === "") {
-                            // user cleared input
-                            updateRow(index, { quantity: 0 }); // keep store consistent but UI shows empty
-                            return;
-                          }
-
-                          const newQuantity = Number(value);
-
-                          if (
-                            salesType === "Retail" &&
-                            newQuantity > maxQuantity &&
-                            maxQuantity > 0
-                          ) {
-                            toast.warn(
-                              `Only ${maxQuantity} ${
-                                row.unit || "items"
-                              } available in stock`
-                            );
-                            updateRow(index, { quantity: maxQuantity });
-                          } else {
-                            updateRow(index, { quantity: newQuantity });
-                          }
-                        }}
-                        className="text-center !bg-white"
-                      />
+                    <TableCell className="w-[75px] md:w-[120px]">
+                      {selectedProduct?.isBundleProduct ? (
+                        <div className="flex flex-col gap-1 items-center">
+                          <div className="flex items-center gap-1">
+                            <div className="flex flex-col items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={Math.floor(maxQuantity)}
+                                value={row.bundlesQty ?? ""}
+                                placeholder="0"
+                                onChange={(e) => handleBundleChange(index, e.target.value === "" ? 0 : Number(e.target.value), row.kgQty ?? 0)}
+                                className="w-[50px] h-9 border border-[#E5E7EB] rounded text-center text-xs outline-none bg-white focus:ring-1 focus:ring-gray-200"
+                              />
+                              <span className="text-[9px] text-gray-400">bundles</span>
+                            </div>
+                            <span className="text-gray-300 text-sm">+</span>
+                            <div className="flex flex-col items-center">
+                              <input
+                                type="number"
+                                min={0}
+                                max={(selectedProduct.bundleSize || 20) - 1}
+                                value={row.kgQty ?? ""}
+                                placeholder="0"
+                                onChange={(e) => handleBundleChange(index, row.bundlesQty ?? 0, e.target.value === "" ? 0 : Number(e.target.value))}
+                                className="w-[50px] h-9 border border-[#E5E7EB] rounded text-center text-xs outline-none bg-white focus:ring-1 focus:ring-gray-200"
+                              />
+                              <span className="text-[9px] text-gray-400">{selectedProduct.subUnit || "kg"}</span>
+                            </div>
+                          </div>
+                          {(row.bundlesQty || row.kgQty) ? (
+                            <p className="text-[10px] text-gray-500 text-center">
+                              = {formatBundleQty(row.bundlesQty, row.kgQty)}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <Input
+                          type="number"
+                          max={maxQuantity}
+                          value={row.quantity === 0 ? "" : row.quantity}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "") {
+                              updateRow(index, { quantity: 0 });
+                              return;
+                            }
+                            const newQuantity = Number(value);
+                            if (salesType === "Retail" && newQuantity > maxQuantity && maxQuantity > 0) {
+                              toast.warn(`Only ${maxQuantity} ${row.unit || "items"} available in stock`);
+                              updateRow(index, { quantity: maxQuantity });
+                            } else {
+                              updateRow(index, { quantity: newQuantity });
+                            }
+                          }}
+                          className="text-center !bg-white"
+                        />
+                      )}
                     </TableCell>
 
                     {/* Unit Price */}

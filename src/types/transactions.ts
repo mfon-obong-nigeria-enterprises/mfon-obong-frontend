@@ -16,6 +16,8 @@ export interface Item {
   discount: number;
   subtotal: number;
   createdAt: string;
+  bundlesQty?: number;
+  kgQty?: number;
 }
 
 export interface BaseUser {
@@ -87,6 +89,8 @@ export type TransactionCreate = {
     discount?: number;
     unitPrice?: number;
     wholesalePrice?: number;
+    bundlesQty?: number;
+    kgQty?: number;
   }[];
   amountPaid: number;
   discount: number;

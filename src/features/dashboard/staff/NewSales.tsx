@@ -538,6 +538,8 @@ export type Row = {
   total: number;
   unit?: string;
   productName?: string;
+  bundlesQty?: number;
+  kgQty?: number;
 };
 
 const emptyRow: Row = {
@@ -551,6 +553,8 @@ const emptyRow: Row = {
   total: 0,
   unit: "",
   productName: "",
+  bundlesQty: undefined,
+  kgQty: undefined,
 };
 
 const getTodayDateString = () => {
@@ -965,6 +969,8 @@ const NewSales: React.FC = () => {
           quantity: row.quantity,
           unitPrice: price,
           unit: product?.unit || "pcs",
+          bundlesQty: row.bundlesQty,
+          kgQty: row.kgQty,
         };
       });
 
@@ -1042,6 +1048,8 @@ const NewSales: React.FC = () => {
               : { unitPrice: price }),
             unit: product?.unit || "pcs",
             discount: 0,
+            ...(row.bundlesQty !== undefined ? { bundlesQty: row.bundlesQty } : {}),
+            ...(row.kgQty !== undefined ? { kgQty: row.kgQty } : {}),
           };
         });
 

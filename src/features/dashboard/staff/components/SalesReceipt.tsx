@@ -1,7 +1,7 @@
 import React from "react";
 import type { Transaction } from "@/types/transactions";
 import { Button } from "@/components/ui/button";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty, isBundleItem } from "@/utils/itemDisplay";
 
 interface SalesReceiptProps {
   transaction: Transaction;
@@ -87,7 +87,9 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
           {transaction.items.map((row, i) => (
             <tr key={i} className="border-b">
               <td className="px-2 py-3 text-center text-xs border-r">
-                {row.quantity}
+                {isBundleItem(row.bundlesQty, row.kgQty)
+                  ? formatBundleQty(row.bundlesQty, row.kgQty)
+                  : row.quantity}
               </td>
               <td className="px-1.5 text-center text-xs border-r">
                 {itemDisplayName(row.productName, row.variantName)}
