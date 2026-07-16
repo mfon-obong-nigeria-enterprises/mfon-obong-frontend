@@ -1,6 +1,7 @@
 import React from "react";
 import type { Transaction } from "@/types/transactions";
 import { Button } from "@/components/ui/button";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 interface SalesReceiptProps {
   transaction: Transaction;
@@ -89,7 +90,7 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
                 {row.quantity}
               </td>
               <td className="px-1.5 text-center text-xs border-r">
-                {row.productName}
+                {itemDisplayName(row.productName, row.variantName)}
               </td>
               <td className="px-1.5 text-center text-xs border-r">
                 {row.unitPrice}

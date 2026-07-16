@@ -1,6 +1,7 @@
 import type { Transaction } from "@/types/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { itemDisplayName } from "@/utils/itemDisplay";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
 import {
   getTransactionDateString,
@@ -384,7 +385,7 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                                     "units"}
                                 </span>
                                 <span className="text-xs md:text-sm text-[#444444]">
-                                  {item.productName} ({item.unit})
+                                  {itemDisplayName(item.productName, item.variantName)} ({item.unit})
                                 </span>
                                 <span className="text-xs md:text-sm text-[#444444] font-medium">
                                   {formatCurrency(item.unitPrice)}/
@@ -537,7 +538,7 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                                   <span className="text-xs md:text-sm text-[#444444]">
                                     {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}` : "-"}
                                   </span>
-                                  <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
+                                  <span className="text-xs md:text-sm text-[#444444]">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</span>
                                   <span className="text-xs md:text-sm text-[#444444] text-right">
                                     {hasExactLineData
                                       ? formatCurrency(meta.returnAmount)

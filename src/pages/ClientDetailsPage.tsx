@@ -36,6 +36,7 @@ import { getClientById } from "@/services/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getTransactionDate } from "@/utils/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 import type { DateRange } from "react-day-picker";
 
@@ -628,7 +629,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
         txn.items.forEach((item) => {
           const qty = item.quantity || 0;
           const price = item.unitPrice || 0;
-          const descText = (`${item.productName} (${item.unit})`)?.toUpperCase() || "ITEM";
+          const descText = (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
           doc.text(String(qty), colQty, cursorY);
           doc.text(descText, colDesc, cursorY);
           doc.text(formatCurrencyForPDF(price), colRate, cursorY, { align: "right" });
@@ -832,7 +833,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
             const qty = item.quantity || 0;
             const rate = item.unitPrice || 0;
             const amount = Number(item.subtotal) || qty * rate;
-            const descText = (`${item.productName} (${item.unit})`)?.toUpperCase() || "ITEM";
+            const descText = (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
             doc.text(String(qty), colQty, cursorY);
             doc.text(descText, colDesc, cursorY);
             doc.text(formatCurrencyForPDF(rate), colRate, cursorY, { align: "right" });

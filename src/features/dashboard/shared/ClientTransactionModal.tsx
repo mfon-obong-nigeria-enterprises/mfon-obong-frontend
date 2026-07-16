@@ -1,6 +1,7 @@
 import Modal from "@/components/Modal";
 import { useTransactionsStore } from "@/stores/useTransactionStore";
 import { MapPin, Phone } from "lucide-react";
+import { itemDisplayName } from "@/utils/itemDisplay";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -260,7 +261,7 @@ const ClientTransactionModal = () => {
                             <span className="text-xs md:text-sm text-[#444444]">
                               {item.quantity} {item.unit?.split(" ")[0]?.toLowerCase() || "units"}
                             </span>
-                            <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
+                            <span className="text-xs md:text-sm text-[#444444]">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</span>
                             <span className="text-xs md:text-sm text-[#444444] font-medium">
                               {formatCurrency(item.unitPrice)}/{item.unit?.split(" ")[0]?.toLowerCase() || "unit"}
                             </span>
@@ -361,7 +362,7 @@ const ClientTransactionModal = () => {
                               <span className="text-xs md:text-sm text-[#444444]">
                                 {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}` : "-"}
                               </span>
-                              <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
+                              <span className="text-xs md:text-sm text-[#444444]">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</span>
                               <span className="text-xs md:text-sm text-[#444444] text-right">
                                 {hasExactLineData
                                   ? formatCurrency(meta.returnAmount)

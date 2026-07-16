@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import type { Transaction } from "@/types/transactions";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 const fmt = (amount: number): string => {
   const val = new Intl.NumberFormat("en-NG", {
@@ -242,7 +243,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
       const rate = item.unitPrice || 0;
       const amount = Number(item.subtotal) || qty * rate;
       doc.text(String(qty), colQty, cursorY);
-      doc.text(`${item.productName} (${item.unit})`.toUpperCase(), colDesc, cursorY);
+      doc.text(`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`.toUpperCase(), colDesc, cursorY);
       doc.text(fmt(rate), colRate, cursorY, { align: "right" });
       doc.text(fmt(amount), colAmount, cursorY, { align: "right" });
       cursorY += 6;

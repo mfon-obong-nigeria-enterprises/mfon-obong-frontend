@@ -8,6 +8,16 @@ export interface PriceHistoryItem {
 }
 
 // ==================== PRODUCT TYPES ====================
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  stock: number;
+  unitPrice: number;
+  minStockLevel: number;
+  isActive: boolean;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -23,6 +33,8 @@ export interface Product {
   unit: string;
   unitPrice: number;
   wholesalePrice?: number;
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
   priceHistory?: PriceHistoryItem[];
   isActive: boolean;
   createdAt?: string;
@@ -145,13 +157,22 @@ export type CreateTransactionPayload =
   | ProductTransactionPayload;
 
 // ==================== PRODUCT RELATED TYPES ====================
+export interface NewProductVariant {
+  name: string;
+  unitPrice: number;
+  stock: number;
+  minStockLevel: number;
+}
+
 export interface NewProduct {
   name: string;
   categoryId: string;
   unit: string;
-  unitPrice: number;
-  stock: number;
-  minStockLevel: number;
+  unitPrice?: number;
+  stock?: number;
+  minStockLevel?: number;
+  hasVariants?: boolean;
+  variants?: NewProductVariant[];
   // branchId: string;
 }
 

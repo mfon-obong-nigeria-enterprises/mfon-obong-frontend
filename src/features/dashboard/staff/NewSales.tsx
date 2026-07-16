@@ -529,6 +529,8 @@ const getServerUrl = () => {
 // socket-related types
 export type Row = {
   productId: string;
+  variantId?: string;
+  variantName?: string;
   unitPrice: number;
   quantity: number;
   discount: number;
@@ -540,6 +542,8 @@ export type Row = {
 
 const emptyRow: Row = {
   productId: "",
+  variantId: "",
+  variantName: "",
   unitPrice: 0,
   quantity: 1,
   discount: 0,
@@ -957,6 +961,7 @@ const NewSales: React.FC = () => {
         
         return {
           productName: product?.name || row.productName || "Unknown Product",
+          variantName: row.variantName || undefined,
           quantity: row.quantity,
           unitPrice: price,
           unit: product?.unit || "pcs",
@@ -1030,6 +1035,7 @@ const NewSales: React.FC = () => {
 
           return {
             productId: row.productId,
+            ...(row.variantId ? { variantId: row.variantId } : {}),
             quantity: row.quantity,
             ...(isWholesale
               ? { unitPrice: price, wholesalePrice: price }

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactDOM from "react-dom";
 import Modal from "@/components/Modal";
 import { toast } from "react-toastify";
 
@@ -23,10 +24,11 @@ import InputWithSuggestions from "@/components/ui/inputwithsuggestions";
 import { Button } from "@/components/ui/button";
 
 // icons
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 // utils
 import { formatCurrency } from "@/utils/styles";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 // type
 import type { Row } from "../NewSales";
@@ -43,6 +45,178 @@ interface AddSaleProductProps {
   products: Product[];
   salesType: "Retail" | "Wholesale";
 }
+
+// ─── Nested category → product picker (portal-based) ─────────────────────────
+interface CategoryProductSelectProps {
+  value: string;
+  onValueChange: (productId: string) => void;
+  options: Product[];
+  grouped: Record<string, Product[]>;
+  placeholder?: string;
+  triggerClassName?: string;
+  selectedVariantName?: string;
+}
+
+const CategoryProductSelect: React.FC<CategoryProductSelectProps> = ({
+  value,
+  onValueChange,
+  options,
+  grouped,
+  placeholder = "Select product",
+  triggerClassName = "",
+  selectedVariantName,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [expandedCats, setExpandedCats] = useState<string[]>([]);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const selectedProduct = options.find((p) => p._id === value);
+
+  // Calculate position from the trigger's bounding rect
+  const calculatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const dropdownHeight = 256; // max-h-64 = 16rem = 256px
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < dropdownHeight;
+
+    setDropdownStyle({
+      position: "fixed",
+      left: rect.left,
+      width: Math.max(rect.width, 224), // at least w-56
+      zIndex: 9999,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+    });
+  }, []);
+
+  const handleOpen = () => {
+    calculatePosition();
+    setOpen((prev) => !prev);
+  };
+
+  // Auto-expand the category of the currently selected product
+  useEffect(() => {
+    if (open && selectedProduct) {
+      const cat =
+        typeof selectedProduct.categoryId === "object"
+          ? (selectedProduct.categoryId.name ?? "Other")
+          : "Other";
+      setExpandedCats((prev) => (prev.includes(cat) ? prev : [...prev, cat]));
+    }
+  }, [open, selectedProduct]);
+
+  // Recalculate on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("scroll", calculatePosition, true);
+    window.addEventListener("resize", calculatePosition);
+    return () => {
+      window.removeEventListener("scroll", calculatePosition, true);
+      window.removeEventListener("resize", calculatePosition);
+    };
+  }, [open, calculatePosition]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current && !triggerRef.current.contains(target)) {
+        // If click is inside the portal panel, ignore
+        const panel = document.getElementById("cat-product-panel");
+        if (panel && panel.contains(target)) return;
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const toggleCat = (cat: string) =>
+    setExpandedCats((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+
+  const handleSelect = (productId: string) => {
+    onValueChange(productId);
+    setOpen(false);
+  };
+
+  const panel = open
+    ? ReactDOM.createPortal(
+        <div
+          id="cat-product-panel"
+          style={dropdownStyle}
+          className="bg-white border border-[#E5E7EB] rounded shadow-xl max-h-64 overflow-y-auto"
+        >
+          {Object.keys(grouped).length === 0 && (
+            <p className="text-xs text-gray-400 px-3 py-2">No products available</p>
+          )}
+          {Object.entries(grouped).map(([catName, catProducts]) => (
+            <div key={catName}>
+              <button
+                type="button"
+                onClick={() => toggleCat(catName)}
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-[#333] bg-[#F5F5F5] hover:bg-[#EBEBEB] border-b border-[#E5E7EB]"
+              >
+                <span>{catName}</span>
+                {expandedCats.includes(catName) ? (
+                  <ChevronDown size={12} />
+                ) : (
+                  <ChevronRight size={12} />
+                )}
+              </button>
+              {expandedCats.includes(catName) &&
+                catProducts.map((p) => (
+                  <button
+                    key={p._id}
+                    type="button"
+                    onClick={() => handleSelect(p._id)}
+                    className={`flex items-center w-full px-5 py-2 text-xs text-left border-b border-[#F0F0F0] last:border-0 hover:bg-[#F0FFF4] ${
+                      p._id === value
+                        ? "bg-[#E6FAF0] text-[#2ECC71] font-medium"
+                        : "text-[#444]"
+                    }`}
+                  >
+                    {p.name}
+                    {p.hasVariants && (
+                      <span className="ml-1.5 text-[9px] bg-blue-50 text-blue-500 border border-blue-100 rounded-full px-1.5 py-0.5">
+                        multi-grade
+                      </span>
+                    )}
+                  </button>
+                ))}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleOpen}
+        className={`flex items-center justify-between gap-1 bg-white border border-[#E5E7EB] rounded px-2 text-left ${triggerClassName}`}
+      >
+        <span className="truncate">
+          {selectedProduct ? (
+            itemDisplayName(selectedProduct.name, selectedVariantName)
+          ) : (
+            <span className="text-gray-400">{placeholder}</span>
+          )}
+        </span>
+        <ChevronDown className="shrink-0 text-gray-400" size={13} />
+      </button>
+      {panel}
+    </>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 const discountReasons = [
   "Bulk Purchase Discount",
@@ -94,43 +268,94 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
     );
   };
 
-  // Filter out products that are inactive or out of stock, or already selected
+  // Products with any stock (used for add-row cap)
   const availableProducts = products.filter(
-    (product) => product.isActive && product.stock > 0
+    (p) =>
+      p.isActive &&
+      (p.hasVariants ? (p.variants?.some((v) => v.stock > 0) ?? false) : p.stock > 0)
   );
+
+  // Total selectable slots: each variant grade counts as its own slot
+  const totalSelectableSlots = availableProducts.reduce((sum, p) => {
+    if (p.hasVariants) return sum + (p.variants?.filter((v) => v.stock > 0).length ?? 0);
+    return sum + 1;
+  }, 0);
+
+  // Products visible in the dropdown for a given row:
+  // - Standard products: hidden once selected in any other row
+  // - Variant products: visible as long as ≥1 grade is not yet used in another row
+  const buildProductOptions = (currentIndex: number, currentRow: Row) =>
+    products.filter((p) => {
+      if (!p.isActive) return false;
+      const hasStock = p.hasVariants
+        ? p.variants?.some((v) => v.stock > 0)
+        : p.stock > 0;
+      if (!hasStock) return false;
+      if (p._id === currentRow.productId) return true; // always show own selection
+      if (!p.hasVariants) {
+        return !rows.some((r, i) => i !== currentIndex && r.productId === p._id);
+      }
+      // Variant product: show if at least one grade hasn't been claimed by another row
+      const usedVariantIds = rows
+        .filter((r, i) => i !== currentIndex && r.productId === p._id)
+        .map((r) => r.variantId);
+      return (p.variants?.filter((v) => v.stock > 0 && !usedVariantIds.includes(v.id)) ?? []).length > 0;
+    });
+
+  // Grades available for the grade selector: exclude grades already selected in other rows
+  const getAvailableVariants = (product: Product, currentIndex: number, currentRow: Row) => {
+    const usedVariantIds = rows
+      .filter((r, i) => i !== currentIndex && r.productId === product._id)
+      .map((r) => r.variantId)
+      .filter(Boolean);
+    return (product.variants ?? []).filter(
+      (v) => v.stock > 0 && (v.id === currentRow.variantId || !usedVariantIds.includes(v.id))
+    );
+  };
+
+  // Group an array of products by category name
+  const groupByCategory = (list: Product[]): Record<string, Product[]> =>
+    list.reduce<Record<string, Product[]>>((acc, p) => {
+      const cat = typeof p.categoryId === "object" ? (p.categoryId.name ?? "Other") : "Other";
+      (acc[cat] ??= []).push(p);
+      return acc;
+    }, {});
 
   const handleProductChange = (index: number, productId: string) => {
     const product = products.find((p) => p._id === productId);
     if (product) {
       updateRow(index, {
         productId,
-        unitPrice: product?.unitPrice || 0,
-        unit: product?.unit || "pcs",
-        productName: product?.name || "",
+        variantId: "",
+        variantName: "",
+        unitPrice: product.hasVariants ? 0 : (product.unitPrice || 0),
+        unit: product.unit || "pcs",
+        productName: product.name || "",
       });
     } else {
-      updateRow(index, {
-        productId: "",
-        unitPrice: 0,
-        unit: "",
-        productName: "",
-      });
+      updateRow(index, { productId: "", variantId: "", variantName: "", unitPrice: 0, unit: "", productName: "" });
+    }
+  };
+
+  const handleVariantChange = (index: number, variantId: string) => {
+    const row = rows[index];
+    const product = products.find((p) => p._id === row.productId);
+    const variant = product?.variants?.find((v) => v.id === variantId);
+    if (variant) {
+      updateRow(index, { variantId: variant.id, variantName: variant.name, unitPrice: variant.unitPrice });
     }
   };
 
   // Add new row
   const addRow = () => {
-    // the user cannot add a row if there's only one product
-    if (availableProducts.length === 1) {
+    if (totalSelectableSlots <= 1) {
       toast.warn("You have only one product in store");
       return;
     }
-
-    if (rows.length >= availableProducts.length) {
+    if (rows.length >= totalSelectableSlots) {
       toast.warn("No more products available to add");
       return;
     }
-
     setRows((prev) => [...prev, { ...emptyRow }]);
   };
 
@@ -240,40 +465,27 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
         {/* Data Rows */}
         <div className="space-y-3">
           {rows.map((row, index) => {
-             const selectedProduct = products.find(
-              (p) => p._id === row.productId
-            );
-            const maxQuantity = selectedProduct?.stock || 0;
+             const selectedProduct = products.find((p) => p._id === row.productId);
+             const selectedVariant = selectedProduct?.variants?.find((v) => v.id === row.variantId);
+             const maxQuantity = selectedProduct?.hasVariants
+               ? (selectedVariant?.stock || 0)
+               : (selectedProduct?.stock || 0);
 
             return (
-              <div key={index} className="flex items-center gap-2 border-b pb-3 last:border-0 px-1">
+              <div key={index} className="border-b pb-3 last:border-0 px-1 space-y-2">
+                {/* Product + Grade row */}
+                <div className="flex items-center gap-2">
                 {/* Product Select */}
                 <div className="w-[36%]">
-                   <Select
+                  <CategoryProductSelect
                     value={row.productId}
-                    onValueChange={(value) => handleProductChange(index, value)}
-                  >
-                    <SelectTrigger className="h-[34px] text-[11px] px-2 bg-white border border-[#E5E7EB] rounded w-full">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {products
-                        .filter(
-                          (p) =>
-                            p.isActive &&
-                            p.stock > 0 &&
-                            (p._id === row.productId ||
-                              !rows.some(
-                                (r, i) => r.productId === p._id && i !== index
-                              ))
-                        )
-                        .map((p) => (
-                          <SelectItem key={p._id} value={p._id} className="text-xs">
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={(val) => handleProductChange(index, val)}
+                    options={buildProductOptions(index, row)}
+                    grouped={groupByCategory(buildProductOptions(index, row))}
+                    placeholder="Select"
+                    triggerClassName="w-full h-[34px] text-[11px]"
+                    selectedVariantName={row.variantName}
+                  />
                 </div>
 
                 {/* Quantity */}
@@ -335,13 +547,32 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
 
                  {/* Action */}
                  <div className="w-[8%] flex justify-center">
-                    <button 
+                    <button
                         onClick={() => openDeleteModal(index)}
                         className="w-[30px] h-[30px] bg-[#F5F5F5] rounded flex items-center justify-center hover:bg-red-50"
                     >
                          <Trash2 className="w-3.5 h-3.5 text-[#666]" />
                     </button>
                  </div>
+              </div>
+              {/* Grade selector (mobile) */}
+              {selectedProduct?.hasVariants && (
+                <Select
+                  value={row.variantId || ""}
+                  onValueChange={(val) => handleVariantChange(index, val)}
+                >
+                  <SelectTrigger className="h-[30px] text-[11px] px-2 bg-white border border-[#E5E7EB] rounded w-full">
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableVariants(selectedProduct, index, row).map((v) => (
+                      <SelectItem key={v.id} value={v.id} className="text-xs">
+                        {v.name} — ₦{v.unitPrice.toLocaleString()} ({v.stock} left)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               </div>
             );
           })}
@@ -378,42 +609,44 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                 const selectedProduct = products.find(
                   (p) => p._id === row.productId
                 );
-                const maxQuantity = selectedProduct?.stock || 0;
+                const selectedVariant = selectedProduct?.variants?.find(
+                  (v) => v.id === row.variantId
+                );
+                const maxQuantity = selectedProduct?.hasVariants
+                  ? (selectedVariant?.stock || 0)
+                  : (selectedProduct?.stock || 0);
 
                 return (
                   <TableRow key={index} className="!border-b">
-                    {/* Product select */}
-                    <TableCell className="py-5">
-                      <Select
+                    {/* Product select + grade */}
+                    <TableCell className="py-5 space-y-2">
+                      <CategoryProductSelect
                         value={row.productId}
-                        onValueChange={(value) =>
-                          handleProductChange(index, value)
-                        }
-                      >
-                        <SelectTrigger className="!bg-white w-[75px] md:w-[170px]">
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          {products
-                            .filter(
-                              (p) =>
-                                p.isActive &&
-                                p.stock > 0 &&
-                                // include if its the current row's selected product
-                                (p._id === row.productId ||
-                                  // or if its not already seleceted in another row
-                                  !rows.some(
-                                    (r, i) =>
-                                      r.productId === p._id && i !== index
-                                  ))
-                            )
-                            .map((p) => (
-                              <SelectItem key={p._id} value={p._id}>
-                                {p.name} - {p.unit}
+                        onValueChange={(val) => handleProductChange(index, val)}
+                        options={buildProductOptions(index, row)}
+                        grouped={groupByCategory(buildProductOptions(index, row))}
+                        placeholder="Select product"
+                        triggerClassName="w-[170px] h-9 text-sm"
+                        selectedVariantName={row.variantName}
+                      />
+                      {/* Grade selector (desktop) */}
+                      {selectedProduct?.hasVariants && (
+                        <Select
+                          value={row.variantId || ""}
+                          onValueChange={(val) => handleVariantChange(index, val)}
+                        >
+                          <SelectTrigger className="!bg-white w-[75px] md:w-[170px] text-xs h-8">
+                            <SelectValue placeholder="Select grade" />
+                          </SelectTrigger>
+                          <SelectContent position="popper">
+                            {getAvailableVariants(selectedProduct, index, row).map((v) => (
+                              <SelectItem key={v.id} value={v.id} className="text-xs">
+                                {v.name} — ₦{v.unitPrice.toLocaleString()} ({v.stock} left)
                               </SelectItem>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </TableCell>
 
                     {/* Quantity input */}

@@ -1,5 +1,6 @@
 import { useTransactionsStore } from "@/stores/useTransactionStore";
 import { balanceTextClass, formatCurrency } from "@/utils/styles";
+import { itemDisplayName } from "@/utils/itemDisplay";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import {
   Popover,
@@ -42,7 +43,7 @@ const RecentSalesMobile = () => {
               {sale.items.length > 0 && (
                 <>
                   <span>
-                    {sale.items[0].quantity}x {sale.items[0].productName}
+                    {sale.items[0].quantity}x {itemDisplayName(sale.items[0].productName, sale.items[0].variantName)}
                   </span>
                   {sale.items.length > 1 && (
                     <Popover>
@@ -54,7 +55,7 @@ const RecentSalesMobile = () => {
                       <PopoverContent className="text-sm max-w-60">
                         {sale.items.slice(1).map((item, index) => (
                           <span key={index}>
-                            {item.quantity}x {item.productName}
+                            {item.quantity}x {itemDisplayName(item.productName, item.variantName)}
                             {index < sale.items.length - 2 ? ", " : ""}
                           </span>
                         ))}

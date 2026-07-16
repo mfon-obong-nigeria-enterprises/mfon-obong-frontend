@@ -8,6 +8,8 @@ export interface ExtraCharge {
 export interface Item {
   productName: string;
   productId: string;
+  variantId?: string;
+  variantName?: string;
   quantity: number;
   unit: string;
   unitPrice: number;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, ChevronDown, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 import {
   assignWaybillToTransaction,
@@ -17,6 +18,7 @@ interface Transaction {
   items: Array<{
     quantity: number;
     productName: string;
+    variantName?: string;
   }>;
   total: number;
   createdAt: string;
@@ -249,7 +251,7 @@ const WaybillModal = ({
                           {transaction.items.length > 0 && (
                             <span>
                               {transaction.items[0].quantity}x{" "}
-                              {transaction.items[0].productName}
+                              {itemDisplayName(transaction.items[0].productName, transaction.items[0].variantName)}
                               {transaction.items.length > 1 &&
                                 ` +${transaction.items.length - 1} more`}
                             </span>
