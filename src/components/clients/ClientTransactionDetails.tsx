@@ -1,7 +1,7 @@
 import type { Transaction } from "@/types/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
 import {
   getTransactionDateString,
@@ -379,22 +379,33 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                           {txn.items.map((item, index) => (
                             <div key={`${item.productId}-${index}`}>
                               <div className="grid grid-cols-[1fr_1fr_1fr_auto] md:grid-cols-4 px-4 gap-4 items-center">
-                                <span className="text-xs md:text-sm text-[#444444]">
-                                  {item.quantity}{" "}
-                                  {item.unit?.split(" ")[0]?.toLowerCase() ||
-                                    "units"}
-                                </span>
-                                <span className="text-xs md:text-sm text-[#444444]">
-                                  {itemDisplayName(item.productName, item.variantName)} ({item.unit})
-                                </span>
-                                <span className="text-xs md:text-sm text-[#444444] font-medium">
-                                  {formatCurrency(item.unitPrice)}/
-                                  {item.unit?.split(" ")[0]?.toLowerCase() ||
-                                    "unit"}
-                                </span>
-                                <span className="text-xs md:text-sm text-[#444444] text-right">
-                                  {formatCurrency(item.subtotal)}
-                                </span>
+                                {(() => {
+                                  const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                                  return (
+                                    <>
+                                      <span className="text-xs md:text-sm text-[#444444]">
+                                        {isSub
+                                          ? ""
+                                          : isBundleItem(item.bundlesQty, item.kgQty)
+                                            ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                                            : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
+                                      </span>
+                                      <span className="text-xs md:text-sm text-[#444444]">
+                                        {isSub
+                                          ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
+                                          : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                                      </span>
+                                      <span className="text-xs md:text-sm text-[#444444] font-medium">
+                                        {isSub
+                                          ? formatCurrency(item.subtotal)
+                                          : `${formatCurrency(item.unitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}`}
+                                      </span>
+                                      <span className="text-xs md:text-sm text-[#444444] text-right">
+                                        {formatCurrency(item.subtotal)}
+                                      </span>
+                                    </>
+                                  );
+                                })()}
                               </div>
                               {index < txn.items.length - 1 && (
                                 <div className="h-[1px] bg-gray-100 my-2"></div>
@@ -529,16 +540,33 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                             return (
                               <div key={`${item.productId}-${idx}`}>
                                 <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 gap-4 items-center">
-                                  <span className="text-xs md:text-sm text-[#444444]">
-                                    {item.quantity} {item.unit?.split(" ")[0]?.toLowerCase() || "units"}
-                                  </span>
-                                  <span className="text-xs md:text-sm text-[#444444]">
-                                    {formatCurrency(item.unitPrice)}/{item.unit?.split(" ")[0]?.toLowerCase() || "unit"}
-                                  </span>
-                                  <span className="text-xs md:text-sm text-[#444444]">
-                                    {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}` : "-"}
-                                  </span>
-                                  <span className="text-xs md:text-sm text-[#444444]">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</span>
+                                  {(() => {
+                                    const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                                    return (
+                                      <>
+                                        <span className="text-xs md:text-sm text-[#444444]">
+                                          {isSub
+                                            ? "1"
+                                            : isBundleItem(item.bundlesQty, item.kgQty)
+                                              ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                                              : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
+                                        </span>
+                                        <span className="text-xs md:text-sm text-[#444444]">
+                                          {isSub
+                                            ? formatCurrency(item.subtotal)
+                                            : `${formatCurrency(item.unitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}`}
+                                        </span>
+                                        <span className="text-xs md:text-sm text-[#444444]">
+                                          {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${isSub ? (item.subUnit ?? "kg") : (item.unit?.split(" ")[0]?.toLowerCase() || "unit")}` : "-"}
+                                        </span>
+                                        <span className="text-xs md:text-sm text-[#444444]">
+                                          {isSub
+                                            ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
+                                            : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
                                   <span className="text-xs md:text-sm text-[#444444] text-right">
                                     {hasExactLineData
                                       ? formatCurrency(meta.returnAmount)

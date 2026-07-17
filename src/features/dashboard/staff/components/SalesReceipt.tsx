@@ -1,7 +1,7 @@
 import React from "react";
 import type { Transaction } from "@/types/transactions";
 import { Button } from "@/components/ui/button";
-import { itemDisplayName, formatBundleQty, isBundleItem } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
 
 interface SalesReceiptProps {
   transaction: Transaction;
@@ -73,31 +73,37 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
       </div>
 
       {/* main description */}
-      <table className="w-full border">
+      <table className="w-full border border-gray-200">
         <thead>
-          <tr className="border-b">
-            <td className="px-2 py-3 border-r text-sm">QTY</td>
-            <td className="px-1.5 text-center text-sm border-r">DESCRIPTION</td>
-            <td className="px-1.5 text-center text-sm border-r">UNIT PRICE</td>
-            <td className="px-1.5 text-center text-sm border-r">DISCOUNT</td>
+          <tr className="border-b border-gray-200">
+            <td className="px-2 py-3 border-r border-gray-200 text-sm">QTY</td>
+            <td className="px-1.5 text-center text-sm border-r border-gray-200">DESCRIPTION</td>
+            <td className="px-1.5 text-center text-sm border-r border-gray-200">UNIT PRICE</td>
+            <td className="px-1.5 text-center text-sm border-r border-gray-200">DISCOUNT</td>
             <td className="px-1.5 text-center text-sm">AMOUNT</td>
           </tr>
         </thead>
         <tbody>
-          {transaction.items.map((row, i) => (
-            <tr key={i} className="border-b">
-              <td className="px-2 py-3 text-center text-xs border-r">
-                {isBundleItem(row.bundlesQty, row.kgQty)
-                  ? formatBundleQty(row.bundlesQty, row.kgQty)
-                  : row.quantity}
+          {transaction.items.map((row, i) => {
+            const isSub = isSubUnitItem(row.bundlesQty, row.kgQty);
+            return (
+            <tr key={i} className="border-b border-gray-200">
+              <td className="px-2 py-3 text-center text-xs border-r border-gray-200">
+                {isSub
+                  ? ""
+                  : isBundleItem(row.bundlesQty, row.kgQty)
+                    ? formatBundleQty(row.bundlesQty, row.kgQty, row.unit, row.subUnit)
+                    : row.quantity}
               </td>
-              <td className="px-1.5 text-center text-xs border-r">
-                {itemDisplayName(row.productName, row.variantName)}
+              <td className="px-1.5 text-center text-xs border-r border-gray-200">
+                {isSub
+                  ? subUnitDisplayName(row.kgQty, row.subUnit, row.productName, row.variantName)
+                  : itemDisplayName(row.productName, row.variantName)}
               </td>
-              <td className="px-1.5 text-center text-xs border-r">
-                {row.unitPrice}
+              <td className="px-1.5 text-center text-xs border-r border-gray-200">
+                {isSub ? row.subtotal : row.unitPrice}
               </td>
-              <td className="px-1.5 text-center text-xs border-r">
+              <td className="px-1.5 text-center text-xs border-r border-gray-200">
                 {row.discount}
               </td>
               <td className="px-1.5 text-center text-xs ">{row.subtotal}</td>
@@ -108,7 +114,7 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
           <tr>
             <td
               colSpan={4}
-              className="py-3 px-1.5 text-center text-sm border-r"
+              className="py-3 px-1.5 text-center text-sm border-r border-gray-200"
             >
               Amount Paid
             </td>

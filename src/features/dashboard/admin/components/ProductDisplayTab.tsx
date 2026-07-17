@@ -463,6 +463,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             <Input
               id="stock"
               type="number"
+              step="any"
               {...register("stock", { valueAsNumber: true })}
               placeholder="Stock"
             />
@@ -506,7 +507,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
                 </button>
               )}
             />
-            <label className="text-xs text-[#555]">Sells in bundles + sub-units (e.g. bundles + kg)</label>
+            <label className="text-xs text-[#555]">Sells in units + sub-units (e.g. bags + pound-weight)</label>
           </div>
           <Controller
             name="isBundleProduct"

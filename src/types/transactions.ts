@@ -18,6 +18,7 @@ export interface Item {
   createdAt: string;
   bundlesQty?: number;
   kgQty?: number;
+  subUnit?: string;
 }
 
 export interface BaseUser {

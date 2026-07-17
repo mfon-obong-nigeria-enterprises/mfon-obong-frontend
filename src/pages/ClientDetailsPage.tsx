@@ -36,7 +36,7 @@ import { getClientById } from "@/services/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getTransactionDate } from "@/utils/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
-import { itemDisplayName, formatBundleQty, isBundleItem } from "@/utils/itemDisplay";
+import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
 
 import type { DateRange } from "react-day-picker";
 
@@ -318,7 +318,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     cursorY = headerTopY + logoSize + 12;
 
     // Dividing line
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 5;
@@ -379,7 +379,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     cursorY += 6;
 
     // Dividing line before statement content
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
@@ -395,7 +395,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     doc.text("Materials Supply Record", pageWidth / 2, cursorY + 11, { align: "center" });
     cursorY += 18;
 
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 8;
@@ -485,9 +485,9 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
     // Only draw B/F box if there is a debt before the filter period
     if (isDebt) {
-      doc.setFillColor(252, 240, 242);
+      doc.setFillColor(240, 240, 240);
       doc.rect(margin, cursorY, pageWidth - margin * 2, 10, "F");
-      doc.setFillColor(204, 0, 0);
+      doc.setFillColor(0, 0, 0);
       doc.rect(margin, cursorY, 1.5, 10, "F");
 
       doc.setFont("helvetica", "bold");
@@ -574,9 +574,9 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       checkPageBreak(totalBlockHeight);
 
       // Header
-      doc.setFillColor(252, 240, 242);
+      doc.setFillColor(240, 240, 240);
       doc.rect(margin, cursorY, pageWidth - margin * 2, headerHeight, "F");
-      doc.setFillColor(204, 0, 0);
+      doc.setFillColor(0, 0, 0);
       doc.rect(margin, cursorY, 1.5, headerHeight, "F");
 
       doc.setFont("helvetica", "normal");
@@ -607,7 +607,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       doc.setTextColor(80, 80, 80);
 
       const colQty = margin + 4;
-      const colDesc = margin + 18;
+      const colDesc = margin + 42;
       const colRate = pageWidth - margin - 28;
       const colAmount = pageWidth - margin - 4;
 
@@ -629,14 +629,20 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
         txn.items.forEach((item) => {
           const qty = item.quantity || 0;
           const price = item.unitPrice || 0;
-          const descText = (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
-          const qtyLabel = isBundleItem(item.bundlesQty, item.kgQty)
-            ? formatBundleQty(item.bundlesQty, item.kgQty)
-            : String(qty);
+          const amount = Number(item.subtotal) || qty * price;
+          const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+          const qtyLabel = isSub
+            ? ""
+            : isBundleItem(item.bundlesQty, item.kgQty)
+              ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+              : String(qty);
+          const descText = isSub
+            ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
+            : (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
           doc.text(qtyLabel, colQty, cursorY);
           doc.text(descText, colDesc, cursorY);
-          doc.text(formatCurrencyForPDF(price), colRate, cursorY, { align: "right" });
-          doc.text(formatCurrencyForPDF(qty * price), colAmount, cursorY, { align: "right" });
+          doc.text(formatCurrencyForPDF(isSub ? amount : price), colRate, cursorY, { align: "right" });
+          doc.text(formatCurrencyForPDF(amount), colAmount, cursorY, { align: "right" });
           cursorY += itemLineHeight;
         });
       } else {
@@ -675,7 +681,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       }
 
       // Subtotal
-      doc.setFillColor(252, 240, 242);
+      doc.setFillColor(240, 240, 240);
       doc.rect(margin, cursorY, pageWidth - margin * 2, subTotalHeight, "F");
       doc.setFont("helvetica", "bold");
       doc.setTextColor(204, 0, 0);
@@ -707,7 +713,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
     const lessSectionHeaderHeight = 10;
     checkPageBreak(lessSectionHeaderHeight + 5);
 
-    doc.setFillColor(252, 240, 242);
+    doc.setFillColor(240, 240, 240);
     doc.rect(
       margin,
       cursorY,
@@ -715,7 +721,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
       lessSectionHeaderHeight,
       "F"
     );
-    doc.setFillColor(204, 0, 0);
+    doc.setFillColor(0, 0, 0);
     doc.rect(margin, cursorY, 1.5, lessSectionHeaderHeight, "F");
 
     doc.setFont("helvetica", "bold");
@@ -794,9 +800,9 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
           checkPageBreak(retBlockHeight);
 
           // Header bar
-          doc.setFillColor(252, 240, 242);
+          doc.setFillColor(240, 240, 240);
           doc.rect(margin, cursorY, pageWidth - margin * 2, retHeaderHeight, "F");
-          doc.setFillColor(140, 28, 19);
+          doc.setFillColor(0, 0, 0);
           doc.rect(margin, cursorY, 1.5, retHeaderHeight, "F");
           doc.setFont("helvetica", "normal");
           doc.setFontSize(8);
@@ -836,19 +842,24 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
             const qty = item.quantity || 0;
             const rate = item.unitPrice || 0;
             const amount = Number(item.subtotal) || qty * rate;
-            const descText = (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
-            const qtyLabel = isBundleItem(item.bundlesQty, item.kgQty)
-              ? formatBundleQty(item.bundlesQty, item.kgQty)
-              : String(qty);
+            const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+            const qtyLabel = isSub
+              ? ""
+              : isBundleItem(item.bundlesQty, item.kgQty)
+                ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                : String(qty);
+            const descText = isSub
+              ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
+              : (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
             doc.text(qtyLabel, colQty, cursorY);
             doc.text(descText, colDesc, cursorY);
-            doc.text(formatCurrencyForPDF(rate), colRate, cursorY, { align: "right" });
+            doc.text(formatCurrencyForPDF(isSub ? amount : rate), colRate, cursorY, { align: "right" });
             doc.text(formatCurrencyForPDF(amount), colAmount, cursorY, { align: "right" });
             cursorY += retItemLineHeight;
           });
 
           // Amount returned footer
-          doc.setFillColor(252, 240, 242);
+          doc.setFillColor(240, 240, 240);
           doc.rect(margin, cursorY, pageWidth - margin * 2, retSubTotalHeight, "F");
           doc.setFont("helvetica", "bold");
           doc.setFontSize(8);
@@ -991,7 +1002,7 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
     // --- FOOTER ---
     const footerY = pageHeight - 15;
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, footerY, pageWidth - margin, footerY);
     doc.setFontSize(7);

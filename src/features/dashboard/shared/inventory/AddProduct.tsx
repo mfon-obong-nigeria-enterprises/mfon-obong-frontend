@@ -222,7 +222,7 @@ const AddProduct = () => {
                 />
               </button>
               <Label className="text-[#333333] text-sm cursor-pointer">
-                This product sells in bundles + sub-units (e.g. bundles + kg)
+                This product sells in units + sub-units (e.g. bags + pound-weight)
               </Label>
             </div>
             {isBundleProduct && (
@@ -258,6 +258,7 @@ const AddProduct = () => {
                   {...register("stock", { valueAsNumber: true })}
                   placeholder="100"
                   type="number"
+                  step="any"
                 />
                 {errors.stock && (
                   <p className="text-red-500 text-xs">{errors.stock.message}</p>

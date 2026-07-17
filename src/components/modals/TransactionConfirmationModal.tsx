@@ -12,6 +12,7 @@ export type TransactionItem = {
   unit?: string;
   bundlesQty?: number;
   kgQty?: number;
+  subUnit?: string;
 };
 
 export type TransactionConfirmationData = {
@@ -188,8 +189,10 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                       <td className="py-3 px-4 text-gray-900">{itemDisplayName(item.productName, item.variantName)}</td>
                       <td className="py-3 px-4 text-right text-gray-700">
                         {isBundleItem(item.bundlesQty, item.kgQty)
-                          ? formatBundleQty(item.bundlesQty, item.kgQty)
-                          : `${item.quantity} ${item.unit || "pcs"}`}
+                          ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                          : item.unit
+                            ? `${item.quantity} ${item.unit}`
+                            : ""}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-700">
                         {formatCurrency(item.unitPrice)}
@@ -211,13 +214,17 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                     <span className="font-medium text-gray-900 text-sm">{itemDisplayName(item.productName, item.variantName)}</span>
                     <span className="text-xs text-gray-500">
                       {isBundleItem(item.bundlesQty, item.kgQty)
-                        ? formatBundleQty(item.bundlesQty, item.kgQty)
+                        ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
                         : `${item.quantity} ${item.unit || "pcs"}`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">
-                      {formatCurrency(item.unitPrice)} × {isBundleItem(item.bundlesQty, item.kgQty) ? formatBundleQty(item.bundlesQty, item.kgQty) : item.quantity}
+                      {isBundleItem(item.bundlesQty, item.kgQty)
+                        ? `${formatCurrency(item.unitPrice)} × ${formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)}`
+                        : item.unit
+                          ? `${formatCurrency(item.unitPrice)} × ${item.quantity} ${item.unit}`
+                          : formatCurrency(item.unitPrice)}
                     </span>
                     <span className="font-semibold text-gray-900">
                       {formatCurrency(item.quantity * item.unitPrice)}
