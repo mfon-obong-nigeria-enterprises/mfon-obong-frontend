@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useClientMutations } from "@/hooks/useClientMutations";
 import { isAxiosError, type AxiosError } from "axios";
+import { toast } from "react-toastify";
 import type { CreateClientPayload } from "@/services/clientService";
 
 interface AddClientDialogProps {
@@ -26,6 +27,10 @@ interface FormData {
   phone: string;
   description: string;
   address: string;
+  hasOpeningBalance: boolean;
+  openingBalance: string;
+  openingBalanceType: "debt" | "credit";
+  openingBalanceDate: string;
 }
 
 export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
@@ -33,12 +38,31 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const today = new Date().toISOString().split("T")[0];
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     phone: "",
     description: "",
     address: "",
+    hasOpeningBalance: false,
+    openingBalance: "",
+    openingBalanceType: "debt",
+    openingBalanceDate: today,
   });
+
+  const handleOpeningBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/,/g, "").replace(/[^0-9.]/g, "");
+    if (!raw) {
+      setFormData((prev) => ({ ...prev, openingBalance: "" }));
+      return;
+    }
+    const parts = raw.split(".");
+    const intFormatted = parts[0] ? Number(parts[0]).toLocaleString("en-NG") : "";
+    const formatted =
+      parts.length > 1 ? `${intFormatted}.${parts[1].slice(0, 2)}` : intFormatted;
+    setFormData((prev) => ({ ...prev, openingBalance: formatted }));
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -87,8 +111,21 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
       return;
     }
 
+    if (formData.hasOpeningBalance) {
+      const amount = parseFloat(formData.openingBalance.replace(/,/g, ""));
+      if (!formData.openingBalance || isNaN(amount) || amount <= 0) {
+        setError("Please enter a valid opening balance amount");
+        setIsLoading(false);
+        return;
+      }
+      if (!formData.openingBalanceDate) {
+        setError("Please enter the date for the opening balance");
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
-      // Build the client data object matching backend requirements
       const clientData: CreateClientPayload = {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
@@ -99,16 +136,29 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
         clientData.description = formData.description.trim();
       }
 
+      if (formData.hasOpeningBalance && formData.openingBalance) {
+        const amount = parseFloat(formData.openingBalance.replace(/,/g, ""));
+        if (!isNaN(amount) && amount > 0) {
+          clientData.openingBalance = amount;
+          clientData.openingBalanceType = formData.openingBalanceType;
+          clientData.openingBalanceDate = formData.openingBalanceDate;
+        }
+      }
+
       await createMutate.mutateAsync(clientData);
 
+      toast.success("Client added successfully");
       onOpenChange(false);
 
-      // Reset form
       setFormData({
         name: "",
         phone: "",
         description: "",
         address: "",
+        hasOpeningBalance: false,
+        openingBalance: "",
+        openingBalanceType: "debt",
+        openingBalanceDate: today,
       });
       setError(null);
     } catch (err) {
@@ -139,6 +189,10 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
         phone: "",
         description: "",
         address: "",
+        hasOpeningBalance: false,
+        openingBalance: "",
+        openingBalanceType: "debt",
+        openingBalanceDate: today,
       });
       setError(null);
     }
@@ -149,22 +203,22 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
     <div className="">
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogOverlay className="bg-[#ffffff] fixed inset-0 z-50" />
-        <DialogContent aria-describedby="add-client-dialog z-50">
+        <DialogContent aria-describedby="add-client-dialog z-50" className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-medium text-xl pb-4 pt-2 text-[#1E1E1E]">
+            <DialogTitle className="font-medium text-xl pb-2 pt-2 text-[#1E1E1E]">
               Register New Client
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 pt-3">
+          <form onSubmit={handleSubmit} className="space-y-3 pt-2">
             {error && (
               <div className="text-red-600 text-sm p-2 bg-red-50 rounded">
                 {error}
               </div>
             )}
 
-            <div className="flex items-center gap-3 flex-wrap ">
-              <div className="sm:w-[225px] w-full ">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
                 <Label
                   htmlFor="name"
                   className="text-sm text-[#333333] font-[400]"
@@ -172,7 +226,7 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
                   Client Name
                 </Label>
                 <Input
-                  className="w-full mt-2 font-[400] text-sm border-[#444444] border "
+                  className="w-full mt-2 font-[400] text-sm border-[#444444] border"
                   id="name"
                   value={formData.name}
                   disabled={isLoading}
@@ -184,7 +238,7 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
                 />
               </div>
 
-              <div className="sm:w-[225px] w-full">
+              <div className="flex-1 min-w-0">
                 <Label
                   htmlFor="phone"
                   className="text-sm text-[#333333] font-[400]"
@@ -192,7 +246,7 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
                   Phone Number
                 </Label>
                 <Input
-                  className="w-full mt-2 font-[400] text-sm border border-[#444444] "
+                  className="w-full mt-2 font-[400] text-sm border border-[#444444]"
                   id="phone"
                   value={formData.phone}
                   disabled={isLoading}
@@ -244,9 +298,134 @@ export function AddClientDialog({ open, onOpenChange }: AddClientDialogProps) {
                   }))
                 }
                 placeholder="Add any additional notes about this client..."
-                rows={5}
+                rows={2}
                 disabled={isLoading}
               />
+            </div>
+
+            {/* Opening Balance Toggle */}
+            <div className="border border-[#d9d9d9] rounded-lg p-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      hasOpeningBalance: !prev.hasOpeningBalance,
+                    }))
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                    formData.hasOpeningBalance ? "bg-[#2ECC71]" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.hasOpeningBalance
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+                <div>
+                  <Label className="text-sm text-[#333333] font-[400] cursor-pointer">
+                    Add opening balance (optional)
+                  </Label>
+                  <p className="text-xs text-[#777777] mt-0.5">
+                    For migrating existing clients with a prior balance
+                  </p>
+                </div>
+              </div>
+
+              {formData.hasOpeningBalance && (
+                <div className="space-y-3">
+                  {/* Debt / Credit toggle */}
+                  <div>
+                    <Label className="text-sm text-[#333333] font-[400] block mb-2">
+                      Balance type
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            openingBalanceType: "debt",
+                          }))
+                        }
+                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium border transition-colors ${
+                          formData.openingBalanceType === "debt"
+                            ? "bg-red-50 border-red-400 text-red-700"
+                            : "bg-white border-[#d9d9d9] text-[#555555] hover:bg-gray-50"
+                        }`}
+                      >
+                        Debt (owes us)
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            openingBalanceType: "credit",
+                          }))
+                        }
+                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium border transition-colors ${
+                          formData.openingBalanceType === "credit"
+                            ? "bg-green-50 border-green-400 text-green-700"
+                            : "bg-white border-[#d9d9d9] text-[#555555] hover:bg-gray-50"
+                        }`}
+                      >
+                        Credit (we owe them)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">
+                      <Label
+                        htmlFor="openingBalance"
+                        className="text-sm text-[#333333] font-[400]"
+                      >
+                        Amount (₦)
+                      </Label>
+                      <Input
+                        className="mt-2 font-[400] text-sm border border-[#444444]"
+                        id="openingBalance"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0"
+                        disabled={isLoading}
+                        value={formData.openingBalance}
+                        onChange={handleOpeningBalanceChange}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-[140px]">
+                      <Label
+                        htmlFor="openingBalanceDate"
+                        className="text-sm text-[#333333] font-[400]"
+                      >
+                        As of date
+                      </Label>
+                      <Input
+                        className="mt-2 font-[400] text-sm border border-[#444444]"
+                        id="openingBalanceDate"
+                        type="date"
+                        disabled={isLoading}
+                        value={formData.openingBalanceDate}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            openingBalanceDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-[10px] pt-4 items-end justify-end ">

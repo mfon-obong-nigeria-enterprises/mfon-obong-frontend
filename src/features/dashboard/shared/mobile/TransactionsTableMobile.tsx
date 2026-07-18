@@ -4,6 +4,7 @@ import WalkinTransactionModal from "../WalkinTransactionModal";
 
 //utils
 import { formatCurrency } from "@/utils/styles";
+import { itemDisplayName } from "@/utils/itemDisplay";
 import {
   getTransactionDateString,
   // getTransactionTimeString,
@@ -77,7 +78,7 @@ const TransactionsTableMobile = ({
                       <>
                         <span>
                           {transaction.items[0].quantity}x{" "}
-                          {transaction.items[0].productName}
+                          {itemDisplayName(transaction.items[0].productName, transaction.items[0].variantName)}
                         </span>
                         {transaction.items.length > 1 && (
                           <Popover>
@@ -95,7 +96,7 @@ const TransactionsTableMobile = ({
                                 .slice(1)
                                 .map(
                                   (item, index) =>
-                                    `${item.quantity}x ${item.productName}${
+                                    `${item.quantity}x ${itemDisplayName(item.productName, item.variantName)}${
                                       index < transaction.items.length - 2
                                         ? ", "
                                         : ""

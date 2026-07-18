@@ -38,6 +38,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatChangeText, getChangeText } from "@/utils/helpersfunction";
 import SalesByCategoryChart from "../shared/CategoryTransactionChart";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 const DashboardSales = () => {
   const navigate = useNavigate();
@@ -200,7 +201,7 @@ const DashboardSales = () => {
       }),
       clientName: txn.clientId?.name || txn.walkInClient?.name || "N/A",
       items: txn.items
-        .map((item) => `${item.quantity}x ${item.productName}`)
+        .map((item) => `${item.quantity}x ${itemDisplayName(item.productName, item.variantName)}`)
         .join(", "),
       amount: txn.total.toLocaleString(),
       staff: txn.userId.name || "N/A",

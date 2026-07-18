@@ -11,14 +11,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronDown, ChevronRight } from "lucide-react";
 import { type Product, type Category } from "@/types/types";
-import { updateProductStock } from "@/services/productService"; 
+import { updateProductStock, updateVariantStock } from "@/services/productService";
 
-// Define UpdateStockProduct type locally
 type UpdateStockProduct = Product & {
   id: string;
   category: string;
+  selected: boolean;
+  newQuantity?: number;
+  shieldStatus: "high" | "low";
+};
+
+type UpdateStockVariant = {
+  id: string;
+  productId: string;
+  productName: string;
+  name: string;
+  stock: number;
+  unitPrice: number;
+  minStockLevel: number;
   selected: boolean;
   newQuantity?: number;
   shieldStatus: "high" | "low";
@@ -60,32 +72,65 @@ export default function UpdateStock({
     return foundCategory?.name || "Uncategorized";
   };
 
-  const [products, setProducts] = useState<UpdateStockProduct[]>(() => {
-    return initialProducts.map((product) => ({
-      ...product,
-      id: product._id,
-      category: getCategoryName(product.categoryId),
-      selected: false,
-      newQuantity: product.stock,
-      shieldStatus: getShieldStatus(product),
-    }));
-  });
+  const buildVariants = (prods: Product[]): UpdateStockVariant[] => {
+    const result: UpdateStockVariant[] = [];
+    prods.forEach((p) => {
+      if (p.hasVariants && p.variants?.length) {
+        p.variants.forEach((v) => {
+          result.push({
+            id: v.id,
+            productId: p._id,
+            productName: p.name,
+            name: v.name,
+            stock: v.stock,
+            unitPrice: v.unitPrice,
+            minStockLevel: v.minStockLevel,
+            selected: false,
+            newQuantity: v.stock,
+            shieldStatus: v.stock > v.minStockLevel ? "high" : "low",
+          });
+        });
+      }
+    });
+    return result;
+  };
 
+  const [products, setProducts] = useState<UpdateStockProduct[]>(() =>
+    initialProducts
+      .filter((p) => !p.hasVariants)
+      .map((product) => ({
+        ...product,
+        id: product._id,
+        category: getCategoryName(product.categoryId),
+        selected: false,
+        newQuantity: product.stock,
+        shieldStatus: getShieldStatus(product),
+      }))
+  );
+
+  const [variants, setVariants] = useState<UpdateStockVariant[]>(() =>
+    buildVariants(initialProducts)
+  );
+
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [bulkQuantity, setBulkQuantity] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setProducts(
-        initialProducts.map((product) => ({
-          ...product,
-          id: product._id,
-          category: getCategoryName(product.categoryId),
-          selected: false,
-          newQuantity: product.stock,
-          shieldStatus: getShieldStatus(product),
-        }))
+        initialProducts
+          .filter((p) => !p.hasVariants)
+          .map((product) => ({
+            ...product,
+            id: product._id,
+            category: getCategoryName(product.categoryId),
+            selected: false,
+            newQuantity: product.stock,
+            shieldStatus: getShieldStatus(product),
+          }))
       );
+      setVariants(buildVariants(initialProducts));
       setSearchTerm("");
       setBulkQuantity("");
     }
@@ -101,11 +146,6 @@ export default function UpdateStock({
     });
   }, [products, searchTerm]);
 
-  const selectedCount = useMemo(
-    () => products.filter((p) => p.selected).length,
-    [products]
-  );
-
   const allFilteredSelected = useMemo(
     () =>
       filteredProducts.length > 0 && filteredProducts.every((p) => p.selected),
@@ -115,6 +155,12 @@ export default function UpdateStock({
   const toggleProductSelection = (id: string) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p))
+    );
+  };
+
+  const toggleVariantSelection = (id: string) => {
+    setVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, selected: !v.selected } : v))
     );
   };
 
@@ -128,16 +174,21 @@ export default function UpdateStock({
   const handleQuantityChange = (id: string, value: string) => {
     const num = parseInt(value, 10);
     const newNum = isNaN(num) ? 0 : Math.max(0, num);
-
     setProducts((prev) =>
       prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              newQuantity: newNum,
-              shieldStatus: getShieldStatus(p, newNum),
-            }
-          : p
+        p.id === id ? { ...p, newQuantity: newNum, shieldStatus: getShieldStatus(p, newNum) } : p
+      )
+    );
+  };
+
+  const handleVariantQuantityChange = (id: string, value: string) => {
+    const num = parseInt(value, 10);
+    const newNum = isNaN(num) ? 0 : Math.max(0, num);
+    setVariants((prev) =>
+      prev.map((v) =>
+        v.id === id
+          ? { ...v, newQuantity: newNum, shieldStatus: newNum > v.minStockLevel ? "high" : "low" }
+          : v
       )
     );
   };
@@ -145,73 +196,95 @@ export default function UpdateStock({
   const applyBulkQuantity = () => {
     const num = parseInt(bulkQuantity, 10);
     const newNum = isNaN(num) ? 0 : Math.max(0, num);
-
     setProducts((prev) =>
       prev.map((p) =>
-        p.selected
-          ? {
-              ...p,
-              newQuantity: newNum,
-              shieldStatus: getShieldStatus(p, newNum),
-            }
-          : p
+        p.selected ? { ...p, newQuantity: newNum, shieldStatus: getShieldStatus(p, newNum) } : p
+      )
+    );
+    setVariants((prev) =>
+      prev.map((v) =>
+        v.selected
+          ? { ...v, newQuantity: newNum, shieldStatus: newNum > v.minStockLevel ? "high" : "low" }
+          : v
       )
     );
     setBulkQuantity("");
   };
 
-  // ✅ FIXED handleSave
+  const toggleExpandProduct = (productId: string) => {
+    setExpandedProducts((prev) => {
+      const next = new Set(prev);
+      next.has(productId) ? next.delete(productId) : next.add(productId);
+      return next;
+    });
+  };
+
   const handleSave = async () => {
-    const updatedProductsPayload = products.filter(
-      (p) =>
-        p.selected &&
-        p.newQuantity !== undefined &&
-        p.newQuantity !== p.stock
+    const updatedProducts = products.filter(
+      (p) => p.selected && p.newQuantity !== undefined && p.newQuantity !== p.stock
+    );
+    const updatedVariants = variants.filter(
+      (v) => v.selected && v.newQuantity !== undefined && v.newQuantity !== v.stock
     );
 
-    if (updatedProductsPayload.length === 0) {
+    if (updatedProducts.length === 0 && updatedVariants.length === 0) {
       onClose();
       return;
     }
 
     try {
-      // 1️⃣ Call API for each update
-      await Promise.all(
-        updatedProductsPayload.map(async (p) => {
-          const difference = (p.newQuantity || 0) - (p.stock || 0);
-          const operation = difference >= 0 ? "add" : "subtract";
-          await updateProductStock(
-            p.id,
-            Math.abs(difference),
-            p.unit || "",
-            operation
-          );
-        })
-      );
+      await Promise.all([
+        ...updatedProducts.map(async (p) => {
+          const diff = (p.newQuantity || 0) - (p.stock || 0);
+          await updateProductStock(p.id, Math.abs(diff), p.unit || "", diff >= 0 ? "add" : "subtract");
+        }),
+        ...updatedVariants.map(async (v) => {
+          const diff = (v.newQuantity || 0) - (v.stock || 0);
+          await updateVariantStock(v.id, Math.abs(diff), diff >= 0 ? "add" : "subtract");
+        }),
+      ]);
 
-      // 2️⃣ Update local state for instant UI feedback
       setProducts((prev) =>
         prev.map((p) =>
-          updatedProductsPayload.find((u) => u.id === p.id)
+          updatedProducts.find((u) => u.id === p.id)
             ? { ...p, stock: p.newQuantity ?? p.stock, selected: false }
             : p
         )
       );
-
-      // 3️⃣ Propagate to parent/Zustand store
-      onSave(
-        updatedProductsPayload.map((p) => ({
-          ...p,
-          stock: p.newQuantity ?? p.stock,
-        }))
+      setVariants((prev) =>
+        prev.map((v) =>
+          updatedVariants.find((u) => u.id === v.id)
+            ? { ...v, stock: v.newQuantity ?? v.stock, selected: false }
+            : v
+        )
       );
 
-      // 4️⃣ Close modal
+      onSave(updatedProducts.map((p) => ({ ...p, stock: p.newQuantity ?? p.stock })));
       onClose();
     } catch (error) {
       console.error("Error updating stock:", error);
     }
   };
+
+  // Products that have variants (for the expandable section)
+  const variantProducts = useMemo(() => {
+    const seen = new Set<string>();
+    return initialProducts.filter((p) => {
+      if (p.hasVariants && !seen.has(p._id)) {
+        const term = searchTerm.toLowerCase();
+        if (!term || p.name.toLowerCase().includes(term)) {
+          seen.add(p._id);
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [initialProducts, searchTerm]);
+
+  const selectedCount = useMemo(
+    () => products.filter((p) => p.selected).length + variants.filter((v) => v.selected).length,
+    [products, variants]
+  );
 
   if (!isOpen) return null;
 
@@ -375,6 +448,93 @@ export default function UpdateStock({
                 ))
               )}
             </div>
+
+            {/* Variant products section */}
+            {variantProducts.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-[#333333] border-b pb-2">
+                  Products with Grades / Variants
+                </h3>
+                {variantProducts.map((product) => {
+                  const isExpanded = expandedProducts.has(product._id);
+                  const productVariants = variants.filter((v) => v.productId === product._id);
+                  return (
+                    <div key={product._id} className="border rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandProduct(product._id)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 text-left"
+                      >
+                        <span className="font-medium text-[#333333] text-sm">{product.name}</span>
+                        <div className="flex items-center gap-2 text-[#7D7D7D]">
+                          <span className="text-xs">{productVariants.length} grades</span>
+                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="divide-y">
+                          {productVariants.map((variant) => (
+                            <div key={variant.id} className="p-4">
+                              <div className="flex flex-col md:flex-row justify-between gap-4">
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      id={`variant-${variant.id}`}
+                                      checked={variant.selected}
+                                      onCheckedChange={() => toggleVariantSelection(variant.id)}
+                                    />
+                                    <Label htmlFor={`variant-${variant.id}`} className="font-medium">
+                                      {variant.name}
+                                    </Label>
+                                  </div>
+                                  <div className="flex gap-4 flex-wrap mt-1 ml-6">
+                                    <div>
+                                      <span className="text-xs block text-[#7D7D7D]">Current</span>
+                                      <span className="text-sm text-[#444444]">{variant.stock} {product.unit || "units"}</span>
+                                    </div>
+                                    <div
+                                      className={`px-2 py-0.5 text-xs font-medium rounded self-end ${
+                                        variant.shieldStatus === "high"
+                                          ? "bg-green-100 text-emerald-500"
+                                          : "bg-red-100 text-red-800"
+                                      }`}
+                                    >
+                                      {variant.shieldStatus === "high" ? "High Stock" : "Low Stock"}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs text-[#7D7D7D] ml-6">
+                                    ₦{variant.unitPrice?.toLocaleString("en-NG") || "0.00"} per unit
+                                  </span>
+                                </div>
+
+                                <div className="w-full md:max-w-xs space-y-2 text-[#7D7D7D]">
+                                  <Label htmlFor={`vqty-${variant.id}`}>New Quantity</Label>
+                                  <Input
+                                    id={`vqty-${variant.id}`}
+                                    type="number"
+                                    min="0"
+                                    value={variant.newQuantity?.toString() ?? ""}
+                                    onChange={(e) => handleVariantQuantityChange(variant.id, e.target.value)}
+                                    className="border border-black w-full"
+                                  />
+                                  <Label>Min Level</Label>
+                                  <Input
+                                    value={`${variant.minStockLevel || 0} ${product.unit || "units"}`}
+                                    readOnly
+                                    className="border-none text-[#444444]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </CardContent>
 

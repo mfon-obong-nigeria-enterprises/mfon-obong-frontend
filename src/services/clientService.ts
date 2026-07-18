@@ -9,6 +9,9 @@ export type CreateClientPayload = {
   email?: string;
   description?: string;
   balance?: number;
+  openingBalance?: number;
+  openingBalanceType?: "debt" | "credit";
+  openingBalanceDate?: string;
 };
 
 export const getAllClients = async (): Promise<Client[]> => {

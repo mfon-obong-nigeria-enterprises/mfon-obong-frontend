@@ -529,6 +529,8 @@ const getServerUrl = () => {
 // socket-related types
 export type Row = {
   productId: string;
+  variantId?: string;
+  variantName?: string;
   unitPrice: number;
   quantity: number;
   discount: number;
@@ -536,10 +538,16 @@ export type Row = {
   total: number;
   unit?: string;
   productName?: string;
+  bundlesQty?: number;
+  kgQty?: number;
+  subUnit?: string;
+  bundleUnitType?: "main" | "sub";
 };
 
 const emptyRow: Row = {
   productId: "",
+  variantId: "",
+  variantName: "",
   unitPrice: 0,
   quantity: 1,
   discount: 0,
@@ -547,6 +555,10 @@ const emptyRow: Row = {
   total: 0,
   unit: "",
   productName: "",
+  bundlesQty: undefined,
+  kgQty: undefined,
+  subUnit: undefined,
+  bundleUnitType: undefined,
 };
 
 const getTodayDateString = () => {
@@ -954,12 +966,20 @@ const NewSales: React.FC = () => {
       .map((row) => {
         const product = products.find((p) => p._id === row.productId);
         const price = Number(row.unitPrice) || product?.unitPrice || 0;
-        
+        const isSubBundle = product?.isBundleProduct && row.bundleUnitType === "sub";
+        const baseName = product?.name || row.productName || "Unknown Product";
+
         return {
-          productName: product?.name || row.productName || "Unknown Product",
-          quantity: row.quantity,
+          productName: isSubBundle && row.kgQty
+            ? `${row.kgQty}${row.subUnit ?? "kg"} ${baseName}`
+            : baseName,
+          variantName: row.variantName || undefined,
+          quantity: isSubBundle ? 1 : row.quantity,
           unitPrice: price,
-          unit: product?.unit || "pcs",
+          unit: isSubBundle ? "" : (product?.unit || "pcs"),
+          bundlesQty: isSubBundle ? undefined : row.bundlesQty,
+          kgQty: isSubBundle ? undefined : row.kgQty,
+          subUnit: row.subUnit,
         };
       });
 
@@ -1018,9 +1038,17 @@ const NewSales: React.FC = () => {
         .map((row) => {
           const product = products.find((p) => p._id === row.productId)!;
           const isWholesale = transactionType === "WHOLESALE";
-          // Use the row's unit price (which may have been overridden by staff)
-          // falling back to the product's default price if not set
-          const price = Number(row.unitPrice) || product.unitPrice;
+
+          // For sub-unit bundle rows: row stores total-for-cut as unitPrice (e.g. ₦30k for 12kg).
+          // Convert back to per-bundle price and decimal-bundle quantity for the backend.
+          const isSubBundle = product?.isBundleProduct && row.bundleUnitType === "sub";
+          const bundleSize = product?.bundleSize ?? 20;
+          const kgQty = row.kgQty ?? 0;
+          const apiQuantity = isSubBundle ? kgQty / bundleSize : row.quantity;
+          // apiPrice = (totalForCut / kgQty) * bundleSize = perBundlePrice
+          const price = isSubBundle && kgQty > 0
+            ? (row.unitPrice * bundleSize) / kgQty
+            : Number(row.unitPrice) || product.unitPrice;
 
           if (isWholesale && price <= 0) {
             throw new Error(
@@ -1030,12 +1058,15 @@ const NewSales: React.FC = () => {
 
           return {
             productId: row.productId,
-            quantity: row.quantity,
+            ...(row.variantId ? { variantId: row.variantId } : {}),
+            quantity: apiQuantity,
             ...(isWholesale
               ? { unitPrice: price, wholesalePrice: price }
               : { unitPrice: price }),
             unit: product?.unit || "pcs",
             discount: 0,
+            ...(row.bundlesQty !== undefined ? { bundlesQty: row.bundlesQty } : {}),
+            ...(row.kgQty !== undefined ? { kgQty: row.kgQty } : {}),
           };
         });
 

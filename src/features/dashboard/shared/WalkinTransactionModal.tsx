@@ -8,6 +8,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
 import { balanceClassT } from "@/utils/styles";
 import { toast } from "sonner";
+import { itemDisplayName } from "@/utils/itemDisplay";
 import { generateReceiptPDF } from "@/utils/generateReceiptPDF";
 
 const WalkinTransactionModal = () => {
@@ -167,7 +168,7 @@ const WalkinTransactionModal = () => {
                       key={item.productId}
                       className="text-[#444444] text-center text-xs border-b border-[#d9d9d9]"
                     >
-                      <td className="py-2">{item.productName} ({item.unit})</td>
+                      <td className="py-2">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</td>
                       <td className="py-2">{item.quantity}</td>
                       <td className="py-2">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-2">₦0.00</td>

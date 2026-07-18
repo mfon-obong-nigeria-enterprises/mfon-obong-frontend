@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @/services/productService.ts
 import api from "./baseApi";
-import type { Product, NewProduct } from "@/types/types";
+import type { Product, NewProduct, NewProductVariant } from "@/types/types";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProductImportRow } from "@/types/types";
 
@@ -52,6 +52,30 @@ export const updateProductStock = async (
 
 export const deleteProduct = async (id: string): Promise<void> => {
   const response = await api.delete(`/products/${id}/delete`);
+  return response.data;
+};
+
+export const createVariant = async (productId: string, data: NewProductVariant) => {
+  const response = await api.post(`/products/${productId}/variants`, data);
+  return response.data;
+};
+
+export const updateVariant = async (variantId: string, data: Partial<NewProductVariant>) => {
+  const response = await api.patch(`/products/variants/${variantId}`, data);
+  return response.data;
+};
+
+export const deleteVariant = async (variantId: string) => {
+  const response = await api.delete(`/products/variants/${variantId}`);
+  return response.data;
+};
+
+export const updateVariantStock = async (
+  variantId: string,
+  quantity: number,
+  operation: "add" | "subtract"
+) => {
+  const response = await api.patch(`/products/variants/${variantId}/stock`, { quantity, operation });
   return response.data;
 };
 

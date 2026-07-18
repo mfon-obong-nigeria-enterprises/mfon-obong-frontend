@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { X, Minus, Plus, ChevronDown } from 'lucide-react';
 import type { Transaction } from '@/types/transactions';
 import { getTransactionDate } from '@/utils/transactions';
+import { itemDisplayName } from '@/utils/itemDisplay';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createReturnTransaction, getAllTransactions, type ReturnTransactionItem } from '@/services/transactionService';
 import { toast } from 'react-toastify';
@@ -101,7 +102,7 @@ const ProductReturnCard: React.FC<ProductReturnCardProps> = ({ item, maxQuantity
   }}
 />
           <div>
-            <h3 className="text-base font-semibold text-[#333333]">{item.productName}</h3>
+            <h3 className="text-base font-semibold text-[#333333]">{itemDisplayName(item.productName, item.variantName)}</h3>
             <p className="text-sm text-gray-500 mt-1">{item.quantity} {item.unit || 'units'} purchased</p>
             {maxQuantity < item.quantity && (
               <p className="text-xs text-amber-600 mt-0.5">{item.quantity - maxQuantity} already returned</p>

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 // icons
 import { ChevronDown, Package } from "lucide-react";
@@ -47,9 +48,9 @@ const MobileSalesActivity = ({
                     <>
                       <span>
                         {transaction.items[0].quantity}x{" "}
-                        {transaction.items[0].productName}
+                        {itemDisplayName(transaction.items[0].productName, transaction.items[0].variantName)}
                       </span>
-                      
+
                       {/* Chevron/Popover Logic */}
                       <Popover>
                         <PopoverTrigger asChild>
@@ -68,7 +69,7 @@ const MobileSalesActivity = ({
                                 .slice(1)
                                 .map((item, index) => (
                                   <div key={index}>
-                                    {item.quantity}x {item.productName}
+                                    {item.quantity}x {itemDisplayName(item.productName, item.variantName)}
                                   </div>
                                 ))}
                             </div>
