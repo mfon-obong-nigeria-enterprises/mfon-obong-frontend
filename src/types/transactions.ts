@@ -8,12 +8,17 @@ export interface ExtraCharge {
 export interface Item {
   productName: string;
   productId: string;
+  variantId?: string;
+  variantName?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
   discount: number;
   subtotal: number;
   createdAt: string;
+  bundlesQty?: number;
+  kgQty?: number;
+  subUnit?: string;
 }
 
 export interface BaseUser {
@@ -85,6 +90,8 @@ export type TransactionCreate = {
     discount?: number;
     unitPrice?: number;
     wholesalePrice?: number;
+    bundlesQty?: number;
+    kgQty?: number;
   }[];
   amountPaid: number;
   discount: number;

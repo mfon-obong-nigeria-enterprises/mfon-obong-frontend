@@ -1,6 +1,7 @@
 import Modal from "@/components/Modal";
 import { useTransactionsStore } from "@/stores/useTransactionStore";
 import { MapPin, Phone } from "lucide-react";
+import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -254,15 +255,27 @@ const ClientTransactionModal = () => {
                       <span className="text-xs md:text-[16px] text-[#333333] text-right">Amount</span>
                     </div>
                     <div className="bg-white border-b border-[#F5F5F5] border-[1px] pt-4 grid grid-cols-1 gap-2">
-                      {txn.items.map((item, index) => (
+                      {txn.items.map((item, index) => {
+                        const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                        return (
                         <div key={`${item.productId}-${index}`}>
                           <div className="grid grid-cols-[1fr_1fr_1fr_auto] md:grid-cols-4 px-4 gap-4 items-center">
                             <span className="text-xs md:text-sm text-[#444444]">
-                              {item.quantity} {item.unit?.split(" ")[0]?.toLowerCase() || "units"}
+                              {isSub
+                                ? "1"
+                                : isBundleItem(item.bundlesQty, item.kgQty)
+                                  ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                                  : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
                             </span>
-                            <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
+                            <span className="text-xs md:text-sm text-[#444444]">
+                              {isSub
+                                ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
+                                : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                            </span>
                             <span className="text-xs md:text-sm text-[#444444] font-medium">
-                              {formatCurrency(item.unitPrice)}/{item.unit?.split(" ")[0]?.toLowerCase() || "unit"}
+                              {isSub
+                                ? formatCurrency(item.subtotal)
+                                : `${formatCurrency(item.unitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}`}
                             </span>
                             <span className="text-xs md:text-sm text-[#444444] text-right">
                               {formatCurrency(item.subtotal)}
@@ -270,7 +283,8 @@ const ClientTransactionModal = () => {
                           </div>
                           {index < txn.items.length - 1 && <div className="h-[1px] bg-gray-100 my-2" />}
                         </div>
-                      ))}
+                        );
+                      })}
                       <div className="bg-[#F5F5F5] flex justify-end px-4 gap-4 items-center py-3 border-t border-gray-100">
                         <span className="text-xs md:text-sm text-[#333333] font-medium">Materials Total Cost:</span>
                         <span className="text-xs md:text-sm text-[#333333] font-bold">
@@ -352,16 +366,33 @@ const ClientTransactionModal = () => {
                         return (
                           <div key={`${item.productId}-${idx}`}>
                             <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 gap-4 items-center">
-                              <span className="text-xs md:text-sm text-[#444444]">
-                                {item.quantity} {item.unit?.split(" ")[0]?.toLowerCase() || "units"}
-                              </span>
-                              <span className="text-xs md:text-sm text-[#444444]">
-                                {formatCurrency(item.unitPrice)}/{item.unit?.split(" ")[0]?.toLowerCase() || "unit"}
-                              </span>
-                              <span className="text-xs md:text-sm text-[#444444]">
-                                {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}` : "-"}
-                              </span>
-                              <span className="text-xs md:text-sm text-[#444444]">{item.productName} ({item.unit})</span>
+                              {(() => {
+                                const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                                return (
+                                  <>
+                                    <span className="text-xs md:text-sm text-[#444444]">
+                                      {isSub
+                                        ? ""
+                                        : isBundleItem(item.bundlesQty, item.kgQty)
+                                          ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                                          : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
+                                    </span>
+                                    <span className="text-xs md:text-sm text-[#444444]">
+                                      {isSub
+                                        ? formatCurrency(item.subtotal)
+                                        : `${formatCurrency(item.unitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}`}
+                                    </span>
+                                    <span className="text-xs md:text-sm text-[#444444]">
+                                      {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${isSub ? (item.subUnit ?? "kg") : (item.unit?.split(" ")[0]?.toLowerCase() || "unit")}` : "-"}
+                                    </span>
+                                    <span className="text-xs md:text-sm text-[#444444]">
+                                      {isSub
+                                        ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
+                                        : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                                    </span>
+                                  </>
+                                );
+                              })()}
                               <span className="text-xs md:text-sm text-[#444444] text-right">
                                 {hasExactLineData
                                   ? formatCurrency(meta.returnAmount)

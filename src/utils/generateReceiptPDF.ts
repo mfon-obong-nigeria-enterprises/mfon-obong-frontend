@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import type { Transaction } from "@/types/transactions";
+import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
 
 const fmt = (amount: number): string => {
   const val = new Intl.NumberFormat("en-NG", {
@@ -75,7 +76,7 @@ const drawCompanyHeader = async (doc: jsPDF, pageWidth: number, margin: number, 
   cursorY = headerTopY + logoSize + 12;
 
   // Divider
-  doc.setDrawColor(204, 0, 0);
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 5;
@@ -129,7 +130,7 @@ const drawCompanyHeader = async (doc: jsPDF, pageWidth: number, margin: number, 
   cursorY += 6;
 
   // Final divider
-  doc.setDrawColor(204, 0, 0);
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 6;
@@ -161,7 +162,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
   doc.text(title, pageWidth / 2, cursorY + 5, { align: "center" });
   cursorY += 12;
 
-  doc.setDrawColor(204, 0, 0);
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.4);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 7;
@@ -215,7 +216,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
   // --- ITEMS TABLE ---
   if (txn.type !== "DEPOSIT" && txn.items && txn.items.length > 0) {
     const colQty = margin + 4;
-    const colDesc = margin + 18;
+    const colDesc = margin + 42;
     const colRate = pageWidth - margin - 28;
     const colAmount = pageWidth - margin - 4;
 
@@ -241,9 +242,18 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
       const qty = item.quantity || 0;
       const rate = item.unitPrice || 0;
       const amount = Number(item.subtotal) || qty * rate;
-      doc.text(String(qty), colQty, cursorY);
-      doc.text(`${item.productName} (${item.unit})`.toUpperCase(), colDesc, cursorY);
-      doc.text(fmt(rate), colRate, cursorY, { align: "right" });
+      const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+      const qtyLabel = isSub
+        ? ""
+        : isBundleItem(item.bundlesQty, item.kgQty)
+          ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+          : String(qty);
+      const description = isSub
+        ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
+        : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`.toUpperCase();
+      doc.text(qtyLabel, colQty, cursorY);
+      doc.text(description, colDesc, cursorY);
+      doc.text(fmt(isSub ? amount : rate), colRate, cursorY, { align: "right" });
       doc.text(fmt(amount), colAmount, cursorY, { align: "right" });
       cursorY += 6;
     });
@@ -285,7 +295,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     });
 
     cursorY += 2;
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
@@ -305,7 +315,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
       doc.text(`Payment Method: ${txn.paymentMethod}`, margin, cursorY);
       cursorY += 6;
     }
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
@@ -345,7 +355,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     }
 
     cursorY += 2;
-    doc.setDrawColor(204, 0, 0);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.4);
     doc.line(margin, cursorY, pageWidth - margin, cursorY);
     cursorY += 6;
@@ -353,7 +363,7 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
 
   // --- FOOTER ---
   const footerY = pageHeight - 15;
-  doc.setDrawColor(204, 0, 0);
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.4);
   doc.line(margin, footerY, pageWidth - margin, footerY);
   doc.setFont("helvetica", "normal");

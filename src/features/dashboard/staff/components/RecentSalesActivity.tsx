@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 // Helper for currency formatting (neutral, no signs or colors)
 const formatAmount = (amount: number) => {
@@ -34,7 +35,7 @@ const RecentSalesActivity: React.FC = () => {
     return (
       <div className="flex items-center text-sm text-[#6B7280]">
         <span className="font-medium mr-1">{primaryItem.quantity}x</span>
-        <span>{primaryItem.productName}</span>
+        <span>{itemDisplayName(primaryItem.productName, primaryItem.variantName)}</span>
         {hasMore && (
           <Popover>
             <PopoverTrigger asChild>
@@ -46,7 +47,7 @@ const RecentSalesActivity: React.FC = () => {
               <div className="flex flex-col gap-2">
                 {items.slice(1).map((item: any, idx: number) => (
                   <span key={idx} className="whitespace-nowrap text-gray-600">
-                    <span className="font-bold">{item.quantity}x</span> {item.productName}
+                    <span className="font-bold">{item.quantity}x</span> {itemDisplayName(item.productName, item.variantName)}
                   </span>
                 ))}
               </div>

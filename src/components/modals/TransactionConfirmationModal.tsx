@@ -2,12 +2,17 @@ import React, { useState, useEffect } from "react";
 import { X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
+import { itemDisplayName, formatBundleQty, isBundleItem } from "@/utils/itemDisplay";
 
 export type TransactionItem = {
   productName: string;
+  variantName?: string;
   quantity: number;
   unitPrice: number;
   unit?: string;
+  bundlesQty?: number;
+  kgQty?: number;
+  subUnit?: string;
 };
 
 export type TransactionConfirmationData = {
@@ -181,9 +186,13 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                 <tbody className="divide-y divide-gray-200">
                   {data.items.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-900">{item.productName}</td>
+                      <td className="py-3 px-4 text-gray-900">{itemDisplayName(item.productName, item.variantName)}</td>
                       <td className="py-3 px-4 text-right text-gray-700">
-                        {item.quantity} {item.unit || "pcs"}
+                        {isBundleItem(item.bundlesQty, item.kgQty)
+                          ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                          : item.unit
+                            ? `${item.quantity} ${item.unit}`
+                            : ""}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-700">
                         {formatCurrency(item.unitPrice)}
@@ -202,14 +211,20 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
               {data.items.map((item, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="font-medium text-gray-900 text-sm">{item.productName}</span>
+                    <span className="font-medium text-gray-900 text-sm">{itemDisplayName(item.productName, item.variantName)}</span>
                     <span className="text-xs text-gray-500">
-                      {item.quantity} {item.unit || "pcs"}
+                      {isBundleItem(item.bundlesQty, item.kgQty)
+                        ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
+                        : `${item.quantity} ${item.unit || "pcs"}`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-600">
-                      {formatCurrency(item.unitPrice)} × {item.quantity}
+                      {isBundleItem(item.bundlesQty, item.kgQty)
+                        ? `${formatCurrency(item.unitPrice)} × ${formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)}`
+                        : item.unit
+                          ? `${formatCurrency(item.unitPrice)} × ${item.quantity} ${item.unit}`
+                          : formatCurrency(item.unitPrice)}
                     </span>
                     <span className="font-semibold text-gray-900">
                       {formatCurrency(item.quantity * item.unitPrice)}
