@@ -108,7 +108,7 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
               </td>
               <td className="px-1.5 text-center text-xs ">{row.subtotal}</td>
             </tr>
-          ))}
+          ); })}
         </tbody>
         <tfoot>
           <tr>

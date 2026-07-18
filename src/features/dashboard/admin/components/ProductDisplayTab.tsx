@@ -512,7 +512,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
           <Controller
             name="isBundleProduct"
             control={control}
-            render={({ field: bundleField }) =>
+            render={({ field: bundleField }) => (
               bundleField.value ? (
                 <div className="flex gap-4 pl-14">
                   <div className="flex flex-col gap-1">
@@ -534,8 +534,8 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
                     />
                   </div>
                 </div>
-              ) : null
-            }
+              ) : <></>
+            )}
           />
         </div>
 

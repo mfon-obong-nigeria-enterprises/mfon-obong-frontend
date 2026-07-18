@@ -28,7 +28,7 @@ import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 // utils
 import { formatCurrency } from "@/utils/styles";
-import { itemDisplayName, formatBundleQty } from "@/utils/itemDisplay";
+import { itemDisplayName } from "@/utils/itemDisplay";
 
 // type
 import type { Row } from "../NewSales";
