@@ -96,6 +96,14 @@ const WalkinTransactionModal = () => {
                   {selectedTransaction.invoiceNumber}
                 </span>
               </p>
+              {selectedTransaction.waybillNumber && (
+                <p className="flex justify-between items-center text-xs text-[#7D7D7D]  border-b border-[#d9d9d9] py-1 px-3">
+                  <span className="font-medium">Waybill Number:</span>
+                  <span className="font-light text-[#444444]">
+                    {selectedTransaction.waybillNumber}
+                  </span>
+                </p>
+              )}
               <p className="flex justify-between items-center text-xs text-[#7D7D7D]  border-b border-[#d9d9d9] py-1 px-3">
                 <span className="font-medium">Date & Time:</span>
                 <p className=" font-light text-[#444444]">

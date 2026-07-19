@@ -48,6 +48,16 @@ export const newProductSchema = z
     }
   });
 
+export const editProductSchema = z.object({
+  unitPrice: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter a valid price" })) as z.ZodType<number>,
+  minStockLevel: z.preprocess(nanToUndefined, z.number().min(0, { message: "Enter a valid level" })) as z.ZodType<number>,
+});
+
+export type EditProductFields = {
+  unitPrice: number;
+  minStockLevel: number;
+};
+
 // Explicit type because z.preprocess() infers output as `unknown` in TypeScript,
 // even though the runtime values are correctly typed numbers.
 export type NewProductFormValues = {

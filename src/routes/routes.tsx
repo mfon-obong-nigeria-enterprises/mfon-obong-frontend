@@ -52,7 +52,8 @@ import AddProduct from "@/features/dashboard/shared/inventory/AddProduct";
 import ClientDetailsPage from "@/pages/ClientDetailsPage";
 import ImportStockPage from "@/features/import/ImportStockPage";
 import UserLog from "@/features/dashboard/manager/component/UserLog";
-// import UserLog from "@/features/dashboard/shared/usermanagement/UserLog";
+import WarehouseListPage from "@/features/dashboard/manager/warehouse/WarehouseListPage";
+import WarehouseDetailPage from "@/features/dashboard/manager/warehouse/WarehouseDetailPage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
@@ -78,6 +79,8 @@ const router = createBrowserRouter([
       { path: "user-management/:id", element: <UserDetailsPage /> },
       { path: "user-management/col-settings", element: <ColumnSettings /> },
       { path: "user-log", element: <UserLog/> },
+      { path: "warehouse", element: <WarehouseListPage /> },
+      { path: "warehouse/:id", element: <WarehouseDetailPage /> },
     ],
   },
 

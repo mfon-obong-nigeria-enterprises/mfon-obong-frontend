@@ -1,11 +1,11 @@
 /** @format */
-import { useState, useEffect } from "react"; // Added useEffect
-import { useForm, Controller, type Resolver } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-// import { toast } from "sonner";
 import { toast } from "react-toastify";
-import { Pencil, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp, Layers, Plus } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp, Layers } from "lucide-react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { getWarehouseProductById } from "@/services/warehouseService";
 import { useInventoryStore } from "@/stores/useInventoryStore";
 import {
   updateProduct,
@@ -14,22 +14,20 @@ import {
   updateVariant,
   deleteVariant,
 } from "@/services/productService";
-import { type Product, type NewProduct } from "@/types/types";
+import { type Product } from "@/types/types";
+import { formatStock } from "@/lib/formatStock";
 import {
-  // Shadcn UI components
   Select,
   SelectContent,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
-  SelectGroup,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal"; // Assuming this Modal component exists
-import { newProductSchema } from "@/schemas/productSchema";
+import { editProductSchema, type EditProductFields } from "@/schemas/productSchema";
 import { useAuthStore } from "@/stores/useAuthStore"; // Import useAuthStore hook
 import { isAxiosError } from "axios";
 
@@ -52,14 +50,8 @@ type EditVariant = {
   unitPrice: number;
   stock: number;
   minStockLevel: number;
+  warehouseProductVariantId?: string | null;
 };
-
-const emptyEditVariant = (): EditVariant => ({
-  name: "",
-  unitPrice: 0,
-  stock: 0,
-  minStockLevel: 0,
-});
 
 const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
   const { user } = useAuthStore();
@@ -79,6 +71,19 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
   const [editVariants, setEditVariants] = useState<EditVariant[]>([]);
   const [deletedVariantIds, setDeletedVariantIds] = useState<string[]>([]);
 
+  // Fetch the linked warehouse product's variants when in edit mode
+  const warehouseProductId = product.warehouseProductId ?? null;
+  const { data: linkedWarehouseProduct } = useQuery({
+    queryKey: ["warehouse-product", warehouseProductId],
+    queryFn: () => getWarehouseProductById(warehouseProductId!),
+    enabled: editMode && !!warehouseProductId,
+    staleTime: 60_000,
+  });
+  const warehouseVariants = linkedWarehouseProduct?.variants ?? [];
+  const availableWarehouseVariants = warehouseVariants.filter(
+    (wv: any) => !editVariants.some(ev => ev.warehouseProductVariantId === (wv._id || wv.id))
+  );
+
   // Aggregated values for variant products
   const variants = product.variants ?? [];
   const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
@@ -89,39 +94,20 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
 
   const {
     register,
-    control,
     handleSubmit,
-    getValues,
     formState: { errors },
     reset,
-  } = useForm<NewProduct>({
+  } = useForm<EditProductFields>({
     defaultValues: {
-      name: product.name,
-      categoryId:
-        typeof product.categoryId === "object"
-          ? product.categoryId._id
-          : product.categoryId,
-      unit: product.unit,
-      stock: product.stock,
       unitPrice: product.unitPrice,
       minStockLevel: product.minStockLevel,
-      isBundleProduct: product.isBundleProduct ?? false,
-      bundleSize: product.bundleSize,
-      subUnit: product.subUnit,
     },
-    resolver: zodResolver(newProductSchema) as unknown as Resolver<NewProduct>,
+    resolver: zodResolver(editProductSchema),
   });
 
   useEffect(() => {
     if (editMode) {
       reset({
-        name: product.name,
-        categoryId:
-          typeof product.categoryId === "object"
-            ? product.categoryId._id
-            : product.categoryId,
-        unit: product.unit,
-        stock: product.stock,
         unitPrice: product.unitPrice,
         minStockLevel: product.minStockLevel,
       });
@@ -134,6 +120,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             unitPrice: v.unitPrice,
             stock: v.stock,
             minStockLevel: v.minStockLevel,
+            warehouseProductVariantId: v.warehouseProductVariantId ?? null,
           }))
         );
         setDeletedVariantIds([]);
@@ -163,31 +150,20 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
   const productCategoryDetails = getCategoryDetails(product.categoryId);
   const categoryDisplayName = productCategoryDetails.name;
 
-  const onSubmit = async (data: NewProduct) => {
+  const onSubmit = async (data: EditProductFields) => {
     try {
       setIsLoading(true);
-
-      // Prepare payload to ensure categoryId is a string ID for the API
-      const payload = {
-        ...data,
-        categoryId:
-          typeof data.categoryId === "object"
-            ? data.categoryId // If it somehow became an object from form, extract ID
-            : data.categoryId, // Otherwise, it's already a string ID
-      };
-
-      // Call API to update on the server (assuming updateProduct service exists and returns Product)
-      const updated = await updateProduct(product._id, payload);
-
-      // Update zustand store to trigger UI update
+      const updated = await updateProduct(product._id, {
+        unitPrice: data.unitPrice,
+        minStockLevel: data.minStockLevel,
+      });
       updateProductInStore(updated);
-
       toast.success("Product updated successfully");
-      setEditMode(false); // Close modal on success
+      setEditMode(false);
     } catch (err) {
       toast.error("Failed to update product: " + err);
     } finally {
-      setIsLoading(false); // Ensure loading is off regardless of outcome
+      setIsLoading(false);
     }
   };
 
@@ -202,13 +178,25 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
     );
   };
 
-  const addEditVariant = () =>
-    setEditVariants((prev) => [...prev, emptyEditVariant()]);
-
   const removeEditVariant = (index: number) => {
     const v = editVariants[index];
     if (v.id) setDeletedVariantIds((prev) => [...prev, v.id!]);
     setEditVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addVariantFromWarehouse = (warehouseVariantId: string) => {
+    const wv = warehouseVariants.find((v: any) => (v._id || v.id) === warehouseVariantId);
+    if (!wv) return;
+    setEditVariants(prev => [
+      ...prev,
+      {
+        name: (wv as any).name,
+        unitPrice: 0,
+        stock: 0,
+        minStockLevel: 0,
+        warehouseProductVariantId: (wv as any)._id || (wv as any).id,
+      },
+    ]);
   };
 
   const handleVariantSubmit = async (e: React.FormEvent) => {
@@ -217,47 +205,33 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
       toast.error("Add at least one grade");
       return;
     }
-    const invalid = editVariants.some((v) => !v.name.trim());
-    if (invalid) {
-      toast.error("Every grade must have a name");
-      return;
-    }
 
     setIsLoading(true);
     try {
-      const { name, categoryId, unit } = getValues();
-
-      // 1. Update product-level fields
-      const updated = await updateProduct(product._id, { name, categoryId, unit });
-
-      // 2. Delete removed variants
+      // 1. Delete removed variants
       for (const vid of deletedVariantIds) {
         await deleteVariant(vid);
       }
 
-      // 3. Update existing / create new variants
+      // 2. Update existing variants (price + min stock only) / create new ones
       for (const v of editVariants) {
         if (v.id) {
           await updateVariant(v.id, {
-            name: v.name,
             unitPrice: v.unitPrice,
-            stock: v.stock,
             minStockLevel: v.minStockLevel,
           });
         } else {
           await createVariant(product._id, {
             name: v.name,
             unitPrice: v.unitPrice,
-            stock: v.stock,
+            stock: 0,
             minStockLevel: v.minStockLevel,
+            warehouseProductVariantId: v.warehouseProductVariantId ?? undefined,
           });
         }
       }
 
-      // 4. Refresh product list in store via React Query invalidation
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      updateProductInStore({ ...updated, variants: undefined }); // optimistic clear until refetch
-
       toast.success("Product updated successfully");
       setEditMode(false);
     } catch {
@@ -294,114 +268,35 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
 
   const shieldStatus = getShieldStatus(product);
 
-  // Shared header fields (name, category, unit) used by both edit forms
-  const sharedFields = (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="name" className="text-xs text-gray-700">Product name</label>
-          <Input id="name" {...register("name")} placeholder="Product name" />
-          {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="categoryId" className="text-xs text-gray-700">Category</label>
-          <Controller
-            name="categoryId"
-            control={control}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Category</SelectLabel>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.categoryId && <p className="text-red-500 text-xs">{errors.categoryId.message}</p>}
-        </div>
-      </div>
-      <div className="flex flex-col gap-1 max-w-xs">
-        <label htmlFor="unit" className="text-xs text-gray-700">Unit</label>
-        <Controller
-          name="unit"
-          control={control}
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Unit</SelectLabel>
-                  {productCategoryDetails.units.length > 0 ? (
-                    productCategoryDetails.units.map((unit, i) => (
-                      <SelectItem key={i} value={unit}>{unit}</SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>No units for this category</SelectItem>
-                  )}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {errors.unit && <p className="text-red-500 text-xs">{errors.unit.message}</p>}
-      </div>
-    </>
-  );
-
   if (editMode && product.hasVariants) {
     return (
       <form
         onSubmit={handleVariantSubmit}
         className="bg-white border border-orange-500 rounded p-4 space-y-4 shadow-xl"
       >
-        {sharedFields}
+        {/* Read-only product identity */}
+        <div>
+          <p className="text-sm font-semibold text-[#333]">{product.name}</p>
+          <p className="text-xs text-gray-500">{categoryDisplayName} &middot; {product.unit}</p>
+        </div>
 
         {/* Grades list */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h6 className="text-sm font-medium text-[#333]">Grades / Variants</h6>
-            <button
-              type="button"
-              onClick={addEditVariant}
-              className="flex items-center gap-1 text-xs text-[#2ECC71] hover:text-green-600 font-medium"
-            >
-              <Plus size={13} /> Add Grade
-            </button>
-          </div>
+          <h6 className="text-sm font-medium text-[#333]">Grades / Variants</h6>
 
           {editVariants.map((v, i) => (
-            <div key={i} className="border border-[#d9d9d9] rounded-lg p-3 space-y-3">
+            <div key={v.id ?? v.warehouseProductVariantId ?? i} className="border border-[#d9d9d9] rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#444]">Grade {i + 1}</span>
-                {editVariants.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeEditVariant(i)}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
+                <span className="text-sm font-medium text-[#333]">{v.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeEditVariant(i)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Grade name</label>
-                  <Input
-                    value={v.name}
-                    onChange={(e) => updateEditVariant(i, "name", e.target.value)}
-                    placeholder="e.g. Grade 1"
-                    className="text-sm h-8"
-                  />
-                </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">Price per unit (₦)</label>
                   <Input
@@ -409,16 +304,6 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
                     value={v.unitPrice || ""}
                     onChange={(e) => updateEditVariant(i, "unitPrice", parseFloat(e.target.value) || 0)}
                     placeholder="0.00"
-                    className="text-sm h-8"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Stock</label>
-                  <Input
-                    type="number"
-                    value={v.stock || ""}
-                    onChange={(e) => updateEditVariant(i, "stock", parseFloat(e.target.value) || 0)}
-                    placeholder="0"
                     className="text-sm h-8"
                   />
                 </div>
@@ -435,6 +320,28 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
               </div>
             </div>
           ))}
+
+          {/* Add grade from warehouse dropdown */}
+          {warehouseProductId && availableWarehouseVariants.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Add a grade</label>
+              <Select value="" onValueChange={addVariantFromWarehouse}>
+                <SelectTrigger className="max-w-xs text-sm">
+                  <SelectValue placeholder="Select grade to add..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableWarehouseVariants.map((wv: any) => (
+                    <SelectItem key={wv._id || wv.id} value={wv._id || wv.id}>
+                      {wv.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {warehouseProductId && availableWarehouseVariants.length === 0 && editVariants.length > 0 && (
+            <p className="text-xs text-[#999]">All available grades have been added.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-8 mt-5">
@@ -455,22 +362,15 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
         onSubmit={handleSubmit(onSubmit)}
         className="bg-white border border-orange-500 rounded p-4 space-y-3 shadow-xl"
       >
-        {sharedFields}
+        {/* Read-only product identity */}
+        <div>
+          <p className="text-sm font-semibold text-[#333]">{product.name}</p>
+          <p className="text-xs text-gray-500">{categoryDisplayName} &middot; {product.unit}</p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="flex flex-col gap-1">
-            <label htmlFor="stock" className="text-xs text-gray-700">Stock</label>
-            <Input
-              id="stock"
-              type="number"
-              step="any"
-              {...register("stock", { valueAsNumber: true })}
-              placeholder="Stock"
-            />
-            {errors.stock && <p className="text-red-500 text-xs">{errors.stock.message}</p>}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="unitPrice" className="text-xs text-gray-700">Unit price</label>
+            <label htmlFor="unitPrice" className="text-xs text-gray-700">Unit price (₦)</label>
             <Input
               id="unitPrice"
               type="number"
@@ -489,54 +389,6 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             />
             {errors.minStockLevel && <p className="text-red-500 text-xs">{errors.minStockLevel.message}</p>}
           </div>
-        </div>
-
-        {/* Bundle product config */}
-        <div className="border-t pt-3 mt-2 space-y-3">
-          <div className="flex items-center gap-3">
-            <Controller
-              name="isBundleProduct"
-              control={control}
-              render={({ field }) => (
-                <button
-                  type="button"
-                  onClick={() => field.onChange(!field.value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${field.value ? "bg-[#2ECC71]" : "bg-gray-300"}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${field.value ? "translate-x-6" : "translate-x-1"}`} />
-                </button>
-              )}
-            />
-            <label className="text-xs text-[#555]">Sells in units + sub-units (e.g. bags + pound-weight)</label>
-          </div>
-          <Controller
-            name="isBundleProduct"
-            control={control}
-            render={({ field: bundleField }) => (
-              bundleField.value ? (
-                <div className="flex gap-4 pl-14">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500">Sub-units per bundle</label>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...register("bundleSize", { valueAsNumber: true })}
-                      placeholder="e.g. 20"
-                      className="w-28 h-8 text-sm"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500">Sub-unit name</label>
-                    <Input
-                      {...register("subUnit")}
-                      placeholder="e.g. kg"
-                      className="w-24 h-8 text-sm"
-                    />
-                  </div>
-                </div>
-              ) : <></>
-            )}
-          />
         </div>
 
         <div className="grid grid-cols-2 gap-8 mt-5">
@@ -638,7 +490,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
           <div>
             <p className="font-medium text-gray-400">Stock</p>
             <p className="text-[var(--cl-text-semidark)] text-[0.8125rem]">
-              {product.stock} {product.unit}
+              {formatStock(product.stock, product.unit, product.isBundleProduct, product.bundleSize, product.subUnit)}
             </p>
           </div>
           <div>
@@ -656,7 +508,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
           <div>
             <p className="font-medium text-gray-400">Minimum Level</p>
             <p className="text-[var(--cl-text-semidark)] text-[0.8125rem]">
-              {product.minStockLevel}
+              {formatStock(product.minStockLevel, product.unit, product.isBundleProduct, product.bundleSize, product.subUnit)}
             </p>
           </div>
         </div>
