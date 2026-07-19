@@ -55,6 +55,11 @@ const items = [
     icon: "mingcute:user-setting-line",
   },
   {
+    title: "Warehouse",
+    url: "/manager/dashboard/warehouse",
+    icon: "material-symbols:warehouse-outline",
+  },
+  {
     title: "Notifications",
     url: "/manager/dashboard/manager-notifications",
     icon: "material-symbols:notifications-outline",

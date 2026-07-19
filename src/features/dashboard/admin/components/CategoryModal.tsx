@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { deleteCategory, updateCategory } from "@/services/categoryService";
 import { isAxiosError } from "axios";
 import { useInventoryStore } from "@/stores/useInventoryStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import TagInput from "@/components/TagInput";
 
 type ModalProps = {
@@ -36,9 +37,10 @@ const CategoryModal = ({
   const [editedDescription, setEditedDescription] = useState(description || "");
   const [editedUnits, setEditedUnits] = useState<string[]>(units || []);
 
-  // Zustand actions
   const setCategories = useInventoryStore((s) => s.setCategories);
   const categories = useInventoryStore((s) => s.categories);
+  const userRole = useAuthStore((s) => s.user?.role);
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   // ✅ Save changes
   const handleSave = async () => {
@@ -198,19 +200,21 @@ const CategoryModal = ({
                 </Button>
               )}
 
-              {/* Delete Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-fit p-2 hover:bg-red-50"
-                onClick={() => setIsDeleteModalOpen(true)}
-                disabled={isLoading}
-              >
-                <Trash2
-                  size={16}
-                  className="text-gray-500 cursor-pointer hover:text-red-500"
-                />
-              </Button>
+              {/* Delete Button — SUPER_ADMIN only */}
+              {isSuperAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit p-2 hover:bg-red-50"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  disabled={isLoading}
+                >
+                  <Trash2
+                    size={16}
+                    className="text-gray-500 cursor-pointer hover:text-red-500"
+                  />
+                </Button>
+              )}
 
               {/* Close Modal Button */}
               <Button

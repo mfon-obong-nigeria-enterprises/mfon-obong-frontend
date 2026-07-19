@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Download, Plus, Tag } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
-import Modal from "@/components/Modal";
-import AddCategory from "@/features/dashboard/shared/inventory/AddCategory";
 
 const EmptyInventory = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
 
   return (
     <div className="space-y-7 mt-2 mx-4">
@@ -35,21 +31,15 @@ const EmptyInventory = () => {
             </h6>
             {user?.role !== "STAFF" && (
               <p className="font-medium text-[#7D7D7D] text-xs md:text-sm max-w-[295px] md:max-w-[400px] text-center">
-                Start building your inventory by adding product and organizing
-                them into categories, you can add product manually or import
-                them from a spreedsheet
+                Start building your inventory by adding products from the warehouse catalog, or import them from a spreadsheet.
               </p>
             )}
           </div>
 
-          {/* buttons
-           */}
+          {/* buttons */}
           {user?.role !== "STAFF" && (
             <div className="flex flex-col md:flex-row gap-5">
-              <Button onClick={() => setAddCategoryModalOpen(true)}>
-                <Tag /> Add Category First
-              </Button>
-              <Button onClick={() => navigate("/add-prod")} variant="outline">
+              <Button onClick={() => navigate("/add-prod")}>
                 <Plus /> Add Product
               </Button>
               <Button
@@ -64,14 +54,6 @@ const EmptyInventory = () => {
           )}
         </div>
       </div>
-
-      <Modal
-        isOpen={addCategoryModalOpen}
-        onClose={() => setAddCategoryModalOpen(false)}
-        size="xxl"
-      >
-        <AddCategory closeBothModals={() => setAddCategoryModalOpen(false)} />
-      </Modal>
     </div>
   );
 };

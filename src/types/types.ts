@@ -16,6 +16,7 @@ export interface ProductVariant {
   unitPrice: number;
   minStockLevel: number;
   isActive: boolean;
+  warehouseProductVariantId?: string | null;
 }
 
 export interface Product {
@@ -40,6 +41,7 @@ export interface Product {
   variants?: ProductVariant[];
   priceHistory?: PriceHistoryItem[];
   isActive: boolean;
+  warehouseProductId?: string | null;
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
@@ -165,6 +167,7 @@ export interface NewProductVariant {
   unitPrice: number;
   stock: number;
   minStockLevel: number;
+  warehouseProductVariantId?: string;
 }
 
 export interface NewProduct {
