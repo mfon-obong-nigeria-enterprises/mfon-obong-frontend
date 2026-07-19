@@ -7,7 +7,6 @@ import { useDebouncedCallback } from "use-debounce";
 import DashboardTitle from "../shared/DashboardTitle";
 import InventoryTab from "./components/InventoryTab";
 import Modal from "@/components/Modal";
-import AddCategory from "@/features/dashboard/shared/inventory/AddCategory";
 
 import { useInventoryStore } from "@/stores/useInventoryStore";
 
@@ -45,7 +44,6 @@ const AdminInventory = () => {
   const [dragging, setDragging] = useState(false);
   const [rel] = useState({ x: 0, y: 0 });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
   const [stockStatus, setStockStatus] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
   const [showMobileActions, setShowMobileActions] = useState(false);
@@ -158,11 +156,6 @@ const AdminInventory = () => {
       }),
     [products, searchQuery, stockStatus, priceRange]
   );
-
-  const closeBothModals = () => {
-    setIsAddModalOpen(false);
-    setAddCategoryModalOpen(false);
-  };
 
   const handleMouseUp = () => setDragging(false);
 
@@ -520,31 +513,8 @@ const AdminInventory = () => {
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                   </Link>
 
-                  <button
-                    onClick={() => {
-                      setIsAddModalOpen(false);
-                      setAddCategoryModalOpen(true);
-                    }}
-                    className="w-full flex justify-between items-center border border-gray-200 p-4 rounded-lg hover:shadow-md hover:border-gray-300 transition-all"
-                  >
-                    <div className="text-left">
-                      <p className="font-medium text-gray-900">Add Category</p>
-                      <p className="text-sm text-gray-600">
-                        Create a new product category
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </button>
                 </div>
               </div>
-            </Modal>
-
-            <Modal
-              isOpen={addCategoryModalOpen}
-              onClose={() => setAddCategoryModalOpen(false)}
-              size="xxl"
-            >
-              <AddCategory closeBothModals={closeBothModals} />
             </Modal>
 
             <Modal

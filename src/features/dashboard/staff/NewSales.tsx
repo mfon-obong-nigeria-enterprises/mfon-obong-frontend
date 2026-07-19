@@ -1134,15 +1134,6 @@ const NewSales: React.FC = () => {
 
   const isClientBlocked = selectedClient ? false : false;
 
-  // Automatically update amountPaid for walk-in clients when total changes
-  useEffect(() => {
-    if (isWalkIn) {
-      const { total } = calculateTotals();
-      if (total > 0) {
-        setAmountPaid(total.toString());
-      }
-    }
-  }, [isWalkIn, rows, globalDiscount, transportFare, loadingOffloading, loadingCharge, extraCharges]);
 
   return (
     <main>
@@ -1172,6 +1163,7 @@ const NewSales: React.FC = () => {
                     onClick={() => {
                       setIsWalkIn(true);
                       setSelectedClient(null);
+                      setAmountPaid("");
                     }}
                     className="w-full md:w-fit bg-[#3D80FF] text-white"
                   >
