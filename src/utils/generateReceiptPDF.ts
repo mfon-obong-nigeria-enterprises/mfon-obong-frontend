@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import type { Transaction } from "@/types/transactions";
-import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 
 const fmt = (amount: number): string => {
   const val = new Intl.NumberFormat("en-NG", {
@@ -226,8 +226,8 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
     doc.setTextColor(130, 130, 130);
     doc.text("Qty", colQty, cursorY);
     doc.text("Description", colDesc, cursorY);
-    doc.text("Rate", colRate, cursorY, { align: "right" });
-    doc.text("Amount", colAmount, cursorY, { align: "right" });
+    doc.text("Rate(N)", colRate, cursorY, { align: "right" });
+    doc.text("Amount(N)", colAmount, cursorY, { align: "right" });
     cursorY += 4;
 
     doc.setDrawColor(220, 220, 220);
@@ -243,18 +243,24 @@ export const generateReceiptPDF = async (txn: Transaction): Promise<void> => {
       const rate = item.unitPrice || 0;
       const amount = Number(item.subtotal) || qty * rate;
       const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
-      const qtyLabel = isSub
-        ? ""
-        : isBundleItem(item.bundlesQty, item.kgQty)
-          ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-          : String(qty);
-      const description = isSub
-        ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
-        : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`.toUpperCase();
+      const isType1Sub = isSub && item.subUnitIsSellUnit;
+      const baseName = itemDisplayName(item.productName, item.variantName);
+      const qtyLabel = isType1Sub
+        ? String(item.kgQty ?? qty)
+        : isSub
+          ? "1"
+          : String(item.bundlesQty ?? qty);
+      const description = isType1Sub
+        ? `${item.subUnit ?? ""} of ${baseName}`.toUpperCase()
+        : isSub
+          ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`.toUpperCase()
+          : item.unit
+            ? `${item.unit} of ${baseName}`.toUpperCase()
+            : baseName.toUpperCase();
       doc.text(qtyLabel, colQty, cursorY);
       doc.text(description, colDesc, cursorY);
-      doc.text(fmt(isSub ? amount : rate), colRate, cursorY, { align: "right" });
-      doc.text(fmt(amount), colAmount, cursorY, { align: "right" });
+      doc.text(fmt(isSub ? amount : rate).slice(1), colRate, cursorY, { align: "right" });
+      doc.text(fmt(amount).slice(1), colAmount, cursorY, { align: "right" });
       cursorY += 6;
     });
 

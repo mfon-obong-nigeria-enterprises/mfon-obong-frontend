@@ -43,6 +43,7 @@ const schema = z.object({
   isBundleProduct: z.boolean().default(false),
   bundleSize: z.preprocess(nanToUndef, z.number().min(1).optional()) as z.ZodType<number | undefined>,
   subUnit: z.string().optional(),
+  subUnitIsSellUnit: z.boolean().default(false),
   // simple product fields
   unitPrice: optNum,
   stock: optNum,
@@ -76,11 +77,12 @@ const AddProduct = () => {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
-    defaultValues: { isBundleProduct: false, variants: [] },
+    defaultValues: { isBundleProduct: false, subUnitIsSellUnit: false, variants: [] },
   });
 
   const selectedCategoryId = useWatch({ control, name: "categoryId" });
   const isBundleProduct = watch("isBundleProduct");
+  const subUnitIsSellUnit = watch("subUnitIsSellUnit");
 
   // Fetch warehouses for "source from warehouse" selector
   const { data: warehouses = [] } = useQuery({
@@ -159,6 +161,7 @@ const AddProduct = () => {
         isBundleProduct: data.isBundleProduct,
         bundleSize: data.bundleSize,
         subUnit: data.subUnit,
+        subUnitIsSellUnit: data.isBundleProduct ? (data.subUnitIsSellUnit ?? false) : false,
         branchId,
         warehouseProductId: selectedWProduct._id || selectedWProduct.id,
       };
@@ -499,20 +502,46 @@ const AddProduct = () => {
                   </Label>
                 </div>
                 {isBundleProduct && (
-                  <div className="flex gap-4 pl-14">
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-[#555]">Sub-units per bundle</Label>
-                      <Input
-                        {...register("bundleSize", { valueAsNumber: true })}
-                        type="number"
-                        min={1}
-                        placeholder="e.g. 20"
-                        className="w-28"
-                      />
+                  <div className="flex flex-col gap-4 pl-14">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs text-[#555]">Sub-units per bundle</Label>
+                        <Input
+                          {...register("bundleSize", { valueAsNumber: true })}
+                          type="number"
+                          min={1}
+                          placeholder="e.g. 20"
+                          className="w-28"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs text-[#555]">Sub-unit name</Label>
+                        <Input {...register("subUnit")} placeholder="e.g. kg" className="w-24" />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <Label className="text-xs text-[#555]">Sub-unit name</Label>
-                      <Input {...register("subUnit")} placeholder="e.g. kg" className="w-24" />
+                    {/* Sub-unit selling mode toggle */}
+                    <div className="flex items-start gap-3">
+                      <Controller
+                        name="subUnitIsSellUnit"
+                        control={control}
+                        render={({ field }) => (
+                          <button
+                            type="button"
+                            onClick={() => field.onChange(!field.value)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors mt-0.5 ${field.value ? "bg-[#3D80FF]" : "bg-gray-300"}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${field.value ? "translate-x-6" : "translate-x-1"}`} />
+                          </button>
+                        )}
+                      />
+                      <div>
+                        <Label className="text-[#333333] text-sm">Sub-unit is the selling unit</Label>
+                        <p className="text-xs text-[#777] mt-0.5">
+                          {subUnitIsSellUnit
+                            ? "ON — Staff can sell in both bundles and sub-units (e.g. 25 lengths or 2 bundles of rod)"
+                            : "OFF — Sub-unit only tracks partial bundles (e.g. 15kg of binding wire = qty 1)"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}

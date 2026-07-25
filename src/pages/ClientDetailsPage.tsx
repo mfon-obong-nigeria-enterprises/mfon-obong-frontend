@@ -36,7 +36,7 @@ import { getClientById } from "@/services/clientService";
 import { useQuery } from "@tanstack/react-query";
 import { getTransactionDate } from "@/utils/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
-import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 
 import type { DateRange } from "react-day-picker";
 
@@ -618,8 +618,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
         doc.setTextColor(130, 130, 130);
         doc.text("Qty", colQty, cursorY);
         doc.text("Description", colDesc, cursorY);
-        doc.text("Rate", colRate, cursorY, { align: "right" });
-        doc.text("Amount", colAmount, cursorY, { align: "right" });
+        doc.text("Rate(N)", colRate, cursorY, { align: "right" });
+        doc.text("Amount(N)", colAmount, cursorY, { align: "right" });
         cursorY += itemTableHeaderHeight;
 
         // Item rows
@@ -631,18 +631,24 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
           const price = item.unitPrice || 0;
           const amount = Number(item.subtotal) || qty * price;
           const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
-          const qtyLabel = isSub
-            ? ""
-            : isBundleItem(item.bundlesQty, item.kgQty)
-              ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-              : String(qty);
-          const descText = isSub
-            ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
-            : (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
+          const isType1Sub = isSub && item.subUnitIsSellUnit;
+          const baseName = itemDisplayName(item.productName, item.variantName);
+          const qtyLabel = isType1Sub
+            ? String(item.kgQty ?? qty)
+            : isSub
+              ? "1"
+              : String(item.bundlesQty ?? qty);
+          const descText = isType1Sub
+            ? `${item.subUnit ?? ""} of ${baseName}`.toUpperCase()
+            : isSub
+              ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`.toUpperCase()
+              : item.unit
+                ? `${item.unit} of ${baseName}`.toUpperCase()
+                : baseName.toUpperCase();
           doc.text(qtyLabel, colQty, cursorY);
           doc.text(descText, colDesc, cursorY);
-          doc.text(formatCurrencyForPDF(isSub ? amount : price), colRate, cursorY, { align: "right" });
-          doc.text(formatCurrencyForPDF(amount), colAmount, cursorY, { align: "right" });
+          doc.text(formatCurrencyForPDF(isSub ? amount : price).slice(1), colRate, cursorY, { align: "right" });
+          doc.text(formatCurrencyForPDF(amount).slice(1), colAmount, cursorY, { align: "right" });
           cursorY += itemLineHeight;
         });
       } else {
@@ -830,8 +836,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
           doc.setTextColor(130, 130, 130);
           doc.text("Qty", colQty, cursorY);
           doc.text("Description", colDesc, cursorY);
-          doc.text("Rate", colRate, cursorY, { align: "right" });
-          doc.text("Amount", colAmount, cursorY, { align: "right" });
+          doc.text("Rate(N)", colRate, cursorY, { align: "right" });
+          doc.text("Amount(N)", colAmount, cursorY, { align: "right" });
           cursorY += retItemTableHeaderHeight;
 
           // Item rows
@@ -843,18 +849,24 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
             const rate = item.unitPrice || 0;
             const amount = Number(item.subtotal) || qty * rate;
             const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
-            const qtyLabel = isSub
-              ? ""
-              : isBundleItem(item.bundlesQty, item.kgQty)
-                ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-                : String(qty);
-            const descText = isSub
-              ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName).toUpperCase()
-              : (`${itemDisplayName(item.productName, item.variantName)} (${item.unit})`)?.toUpperCase() || "ITEM";
+            const isType1Sub = isSub && item.subUnitIsSellUnit;
+            const baseName = itemDisplayName(item.productName, item.variantName);
+            const qtyLabel = isType1Sub
+              ? String(item.kgQty ?? qty)
+              : isSub
+                ? "1"
+                : String(item.bundlesQty ?? qty);
+            const descText = isType1Sub
+              ? `${item.subUnit ?? ""} of ${baseName}`.toUpperCase()
+              : isSub
+                ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`.toUpperCase()
+                : item.unit
+                  ? `${item.unit} of ${baseName}`.toUpperCase()
+                  : baseName.toUpperCase();
             doc.text(qtyLabel, colQty, cursorY);
             doc.text(descText, colDesc, cursorY);
-            doc.text(formatCurrencyForPDF(isSub ? amount : rate), colRate, cursorY, { align: "right" });
-            doc.text(formatCurrencyForPDF(amount), colAmount, cursorY, { align: "right" });
+            doc.text(formatCurrencyForPDF(isSub ? amount : rate).slice(1), colRate, cursorY, { align: "right" });
+            doc.text(formatCurrencyForPDF(amount).slice(1), colAmount, cursorY, { align: "right" });
             cursorY += retItemLineHeight;
           });
 
