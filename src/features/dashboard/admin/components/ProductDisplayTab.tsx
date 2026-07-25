@@ -66,6 +66,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [localSubUnitIsSellUnit, setLocalSubUnitIsSellUnit] = useState(product.subUnitIsSellUnit ?? false);
 
   // Variant edit state
   const [editVariants, setEditVariants] = useState<EditVariant[]>([]);
@@ -111,6 +112,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
         unitPrice: product.unitPrice,
         minStockLevel: product.minStockLevel,
       });
+      setLocalSubUnitIsSellUnit(product.subUnitIsSellUnit ?? false);
       // Seed variant edit state
       if (product.hasVariants) {
         setEditVariants(
@@ -156,6 +158,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
       const updated = await updateProduct(product._id, {
         unitPrice: data.unitPrice,
         minStockLevel: data.minStockLevel,
+        ...(product.isBundleProduct && { subUnitIsSellUnit: localSubUnitIsSellUnit }),
       });
       updateProductInStore(updated);
       toast.success("Product updated successfully");
@@ -390,6 +393,26 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             {errors.minStockLevel && <p className="text-red-500 text-xs">{errors.minStockLevel.message}</p>}
           </div>
         </div>
+
+        {product.isBundleProduct && (
+          <div className="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Sub-unit is a selling unit</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {localSubUnitIsSellUnit
+                  ? `Staff can sell in ${product.unit} OR ${product.subUnit ?? "sub-units"}`
+                  : `Sub-unit only tracks partial-bundle cuts`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLocalSubUnitIsSellUnit((v) => !v)}
+              className={`relative w-9 h-5 rounded-full transition-colors ${localSubUnitIsSellUnit ? "bg-green-500" : "bg-gray-300"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${localSubUnitIsSellUnit ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-8 mt-5">
           <Button onClick={() => setEditMode(false)} variant="outline" className="text-xs" type="button">

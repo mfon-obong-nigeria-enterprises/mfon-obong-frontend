@@ -967,18 +967,22 @@ const NewSales: React.FC = () => {
         const product = products.find((p) => p._id === row.productId);
         const price = Number(row.unitPrice) || product?.unitPrice || 0;
         const isSubBundle = product?.isBundleProduct && row.bundleUnitType === "sub";
+        const isType1 = product?.isBundleProduct && product?.subUnitIsSellUnit;
         const baseName = product?.name || row.productName || "Unknown Product";
 
+        const unit = product?.unit || "";
         return {
-          productName: isSubBundle && row.kgQty
-            ? `${row.kgQty}${row.subUnit ?? "kg"} ${baseName}`
-            : baseName,
+          productName: (isType1 && isSubBundle)
+            ? `${row.subUnit ?? ""} of ${baseName}`
+            : (isSubBundle && row.kgQty)
+              ? `${row.kgQty}${row.subUnit ?? "kg"} of ${baseName}`
+              : unit ? `${unit} of ${baseName}` : baseName,
           variantName: row.variantName || undefined,
-          quantity: isSubBundle ? 1 : row.quantity,
+          quantity: (isType1 && isSubBundle) ? row.quantity : isSubBundle ? 1 : row.quantity,
           unitPrice: price,
-          unit: isSubBundle ? "" : (product?.unit || "pcs"),
-          bundlesQty: isSubBundle ? undefined : row.bundlesQty,
-          kgQty: isSubBundle ? undefined : row.kgQty,
+          unit: "",
+          bundlesQty: undefined,
+          kgQty: undefined,
           subUnit: row.subUnit,
         };
       });
@@ -1039,16 +1043,28 @@ const NewSales: React.FC = () => {
           const product = products.find((p) => p._id === row.productId)!;
           const isWholesale = transactionType === "WHOLESALE";
 
-          // For sub-unit bundle rows: row stores total-for-cut as unitPrice (e.g. ₦30k for 12kg).
-          // Convert back to per-bundle price and decimal-bundle quantity for the backend.
+          const isType1 = product?.isBundleProduct && product?.subUnitIsSellUnit;
           const isSubBundle = product?.isBundleProduct && row.bundleUnitType === "sub";
           const bundleSize = product?.bundleSize ?? 20;
           const kgQty = row.kgQty ?? 0;
-          const apiQuantity = isSubBundle ? kgQty / bundleSize : row.quantity;
-          // apiPrice = (totalForCut / kgQty) * bundleSize = perBundlePrice
-          const price = isSubBundle && kgQty > 0
-            ? (row.unitPrice * bundleSize) / kgQty
-            : Number(row.unitPrice) || product.unitPrice;
+
+          let apiQuantity: number;
+          let price: number;
+
+          if (isType1 && isSubBundle) {
+            // apiQuantity = bundle fraction for stock deduction; price scaled to bundle units so backend subtotal = perSubUnitPrice * kgQty
+            apiQuantity = kgQty / bundleSize;
+            const perSubUnitPrice = Number(row.unitPrice) || (product.unitPrice / bundleSize);
+            price = perSubUnitPrice * bundleSize;
+          } else if (!isType1 && isSubBundle && kgQty > 0) {
+            // Type 2 sub-unit cut: qty=1 stored in row, unitPrice=total-for-cut
+            // Convert back to per-bundle price and decimal-bundle quantity
+            apiQuantity = kgQty / bundleSize;
+            price = (row.unitPrice * bundleSize) / kgQty;
+          } else {
+            apiQuantity = row.quantity;
+            price = Number(row.unitPrice) || product.unitPrice;
+          }
 
           if (isWholesale && price <= 0) {
             throw new Error(

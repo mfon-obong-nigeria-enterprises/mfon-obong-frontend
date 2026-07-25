@@ -25,6 +25,7 @@ export const newProductSchema = z
     isBundleProduct: z.boolean().default(false),
     bundleSize: z.preprocess(nanToUndefined, z.number().min(1).optional()) as z.ZodType<number | undefined>,
     subUnit: z.string().optional(),
+    subUnitIsSellUnit: z.boolean().default(false),
     unitPrice: optionalNum,
     stock: optionalNum,
     minStockLevel: optionalNum,
@@ -68,6 +69,7 @@ export type NewProductFormValues = {
   isBundleProduct?: boolean;
   bundleSize?: number;
   subUnit?: string;
+  subUnitIsSellUnit?: boolean;
   unitPrice?: number;
   stock?: number;
   minStockLevel?: number;

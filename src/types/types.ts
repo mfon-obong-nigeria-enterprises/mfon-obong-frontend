@@ -38,6 +38,7 @@ export interface Product {
   isBundleProduct?: boolean;
   bundleSize?: number;
   subUnit?: string;
+  subUnitIsSellUnit?: boolean;
   variants?: ProductVariant[];
   priceHistory?: PriceHistoryItem[];
   isActive: boolean;
@@ -181,6 +182,7 @@ export interface NewProduct {
   isBundleProduct?: boolean;
   bundleSize?: number;
   subUnit?: string;
+  subUnitIsSellUnit?: boolean;
   variants?: NewProductVariant[];
   // branchId: string;
 }

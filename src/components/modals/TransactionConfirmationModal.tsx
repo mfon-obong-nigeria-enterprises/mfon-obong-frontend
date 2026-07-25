@@ -192,7 +192,7 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                           ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
                           : item.unit
                             ? `${item.quantity} ${item.unit}`
-                            : ""}
+                            : `${item.quantity}`}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-700">
                         {formatCurrency(item.unitPrice)}
@@ -215,7 +215,9 @@ const TransactionConfirmationModal: React.FC<TransactionConfirmationModalProps> 
                     <span className="text-xs text-gray-500">
                       {isBundleItem(item.bundlesQty, item.kgQty)
                         ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-                        : `${item.quantity} ${item.unit || "pcs"}`}
+                        : item.unit
+                          ? `${item.quantity} ${item.unit}`
+                          : `${item.quantity}`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">

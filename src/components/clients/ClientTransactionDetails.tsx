@@ -1,7 +1,7 @@
 import type { Transaction } from "@/types/transactions";
 import { calculateTransactionsWithBalance } from "@/utils/calculateOutstanding";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
 import {
   getTransactionDateString,
@@ -360,48 +360,52 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                       </h3>
                       <div className="bg-[#F9FAFB] overflow-hidden">
                         {/* Table Header */}
-                        <div className="grid grid-cols-[1fr_1fr_1fr_auto] md:grid-cols-4 gap-4 p-4 bg-[#F5F5F5] border-b border-gray-100">
+                        <div className="grid grid-cols-[0.8fr_2fr_1.2fr_90px] gap-4 p-4 bg-[#F5F5F5] border-b border-gray-100">
                           <span className="text-xs md:text-[16px] text-[#333333]">
                             Quantity
                           </span>
                           <span className="text-xs md:text-[16px] text-[#333333]">
-                            Description of goods
+                            Description of Goods
                           </span>
-                          <span className="text-xs md:text-[16px] text-[#333333]">
-                            Rate
+                          <span className="text-xs md:text-[16px] text-[#333333] text-left pl-6">
+                            Rate(₦)
                           </span>
                           <span className="text-xs md:text-[16px] text-[#333333] text-right">
-                            Amount
+                            Amount(₦)
                           </span>
                         </div>
                         {/* Table Body */}
                         <div className="bg-white border-b border-[#F5F5F5] border-[1px] pt-4  grid grid-cols-1 gap-2">
                           {txn.items.map((item, index) => (
                             <div key={`${item.productId}-${index}`}>
-                              <div className="grid grid-cols-[1fr_1fr_1fr_auto] md:grid-cols-4 px-4 gap-4 items-center">
+                              <div className="grid grid-cols-[0.8fr_2fr_1.2fr_90px] px-4 gap-4 items-center">
                                 {(() => {
                                   const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                                  const isType1Sub = isSub && item.subUnitIsSellUnit;
+                                  const baseName = itemDisplayName(item.productName, item.variantName);
                                   return (
                                     <>
                                       <span className="text-xs md:text-sm text-[#444444]">
-                                        {isSub
-                                          ? ""
-                                          : isBundleItem(item.bundlesQty, item.kgQty)
-                                            ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-                                            : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
+                                        {isType1Sub
+                                          ? item.kgQty
+                                          : isSub
+                                            ? 1
+                                            : (item.bundlesQty ?? item.quantity)}
                                       </span>
                                       <span className="text-xs md:text-sm text-[#444444]">
-                                        {isSub
-                                          ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
-                                          : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                                        {isType1Sub
+                                          ? `${item.subUnit ?? ""} of ${baseName}`
+                                          : isSub
+                                            ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`
+                                            : item.unit ? `${item.unit} of ${baseName}` : baseName}
                                       </span>
-                                      <span className="text-xs md:text-sm text-[#444444] font-medium">
+                                      <span className="text-xs md:text-sm text-[#444444] text-left pl-6">
                                         {isSub
-                                          ? formatCurrency(item.subtotal)
-                                          : `${formatCurrency(item.unitPrice)}/${item.unit?.split(" ")[0]?.toLowerCase() || "unit"}`}
+                                          ? formatCurrency(item.subtotal).replace("₦", "").trim()
+                                          : formatCurrency(item.unitPrice).replace("₦", "").trim()}
                                       </span>
                                       <span className="text-xs md:text-sm text-[#444444] text-right">
-                                        {formatCurrency(item.subtotal)}
+                                        {formatCurrency(item.subtotal).replace("₦", "").trim()}
                                       </span>
                                     </>
                                   );
@@ -524,12 +528,12 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                     <div className="border-t border-gray-100 pt-6">
                       <h3 className="text-[#333333] text-[16px] mb-4">Returned Products:</h3>
                       <div className="bg-[#F9FAFB] overflow-hidden">
-                        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 p-4 bg-[#F5F5F5] border-b border-gray-100">
+                        <div className="grid grid-cols-[1fr_1fr_1fr_1fr_90px] gap-4 p-4 bg-[#F5F5F5] border-b border-gray-100">
                           <span className="text-xs md:text-sm text-[#333333]">Quantity</span>
                           <span className="text-xs md:text-sm text-[#333333]">Unit Price</span>
                           <span className="text-xs md:text-sm text-[#333333]">Return Price</span>
                           <span className="text-xs md:text-sm text-[#333333]">Product</span>
-                          <span className="text-xs md:text-sm text-[#333333] text-right">Amount</span>
+                          <span className="text-xs md:text-sm text-[#333333] text-right">Amount(₦)</span>
                         </div>
                         <div className="bg-white border border-[#F5F5F5] pt-4 grid grid-cols-1 gap-2">
                           {txn.items.map((item, idx) => {
@@ -539,17 +543,19 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                               meta?.returnUnitPrice !== undefined && !Number.isNaN(meta.returnUnitPrice);
                             return (
                               <div key={`${item.productId}-${idx}`}>
-                                <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] px-4 gap-4 items-center">
+                                <div className="grid grid-cols-[1fr_1fr_1fr_1fr_90px] px-4 gap-4 items-center">
                                   {(() => {
                                     const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                                    const isType1Sub = isSub && item.subUnitIsSellUnit;
+                                    const baseName = itemDisplayName(item.productName, item.variantName);
                                     return (
                                       <>
                                         <span className="text-xs md:text-sm text-[#444444]">
-                                          {isSub
-                                            ? "1"
-                                            : isBundleItem(item.bundlesQty, item.kgQty)
-                                              ? formatBundleQty(item.bundlesQty, item.kgQty, item.unit, item.subUnit)
-                                              : `${item.quantity} ${item.unit?.split(" ")[0]?.toLowerCase() || "units"}`}
+                                          {isType1Sub
+                                            ? item.kgQty
+                                            : isSub
+                                              ? 1
+                                              : (item.bundlesQty ?? item.quantity)}
                                         </span>
                                         <span className="text-xs md:text-sm text-[#444444]">
                                           {isSub
@@ -560,18 +566,20 @@ export const ClientTransactionDetails: React.FC<clientTrasactionDetailsProps> = 
                                           {hasExactLineData ? `${formatCurrency(meta.returnUnitPrice)}/${isSub ? (item.subUnit ?? "kg") : (item.unit?.split(" ")[0]?.toLowerCase() || "unit")}` : "-"}
                                         </span>
                                         <span className="text-xs md:text-sm text-[#444444]">
-                                          {isSub
-                                            ? subUnitDisplayName(item.kgQty, item.subUnit, item.productName, item.variantName)
-                                            : `${itemDisplayName(item.productName, item.variantName)} (${item.unit})`}
+                                          {isType1Sub
+                                            ? `${item.subUnit ?? ""} of ${baseName}`
+                                            : isSub
+                                              ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`
+                                              : item.unit ? `${item.unit} of ${baseName}` : baseName}
                                         </span>
                                       </>
                                     );
                                   })()}
                                   <span className="text-xs md:text-sm text-[#444444] text-right">
                                     {hasExactLineData
-                                      ? formatCurrency(meta.returnAmount)
+                                      ? formatCurrency(meta.returnAmount).replace("₦", "").trim()
                                       : idx === 0 && txn.actualAmountReturned !== undefined
-                                      ? formatCurrency(txn.actualAmountReturned)
+                                      ? formatCurrency(txn.actualAmountReturned).replace("₦", "").trim()
                                       : "-"}
                                   </span>
                                 </div>

@@ -8,7 +8,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { getTransactionTypeBadgeStyles } from "@/utils/transactionTypeStyles";
 import { balanceClassT } from "@/utils/styles";
 import { toast } from "sonner";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 import { generateReceiptPDF } from "@/utils/generateReceiptPDF";
 
 const WalkinTransactionModal = () => {
@@ -171,18 +171,33 @@ const WalkinTransactionModal = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedTransaction.items.map((item) => (
+                  {selectedTransaction.items.map((item) => {
+                    const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+                    const isType1Sub = isSub && item.subUnitIsSellUnit;
+                    const baseName = itemDisplayName(item.productName, item.variantName);
+                    const description = isType1Sub
+                      ? `${item.subUnit ?? ""} of ${baseName}`
+                      : isSub
+                        ? `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`
+                        : item.unit ? `${item.unit} of ${baseName}` : baseName;
+                    const displayQty = isType1Sub
+                      ? item.kgQty
+                      : isSub
+                        ? 1
+                        : (item.bundlesQty ?? item.quantity);
+                    return (
                     <tr
                       key={item.productId}
                       className="text-[#444444] text-center text-xs border-b border-[#d9d9d9]"
                     >
-                      <td className="py-2">{itemDisplayName(item.productName, item.variantName)} ({item.unit})</td>
-                      <td className="py-2">{item.quantity}</td>
+                      <td className="py-2">{description}</td>
+                      <td className="py-2">{displayQty}</td>
                       <td className="py-2">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-2">₦0.00</td>
                       <td className="py-2">{formatCurrency(item.subtotal)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -339,11 +339,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
           bundleUnitType = "main";
         }
       }
+      // Type 1 (subUnitIsSellUnit): sub-unit is a real selling unit with its own per-unit price
+      // Type 2 (!subUnitIsSellUnit): sub-unit only tracks partial-bundle cuts, price = total for cut
+      const isType1 = product.isBundleProduct && product.subUnitIsSellUnit;
       const baseUnitPrice = product.hasVariants
         ? 0
-        : product.isBundleProduct && bundleUnitType === "sub"
-          ? 0  // sub-unit price is set when kgQty is entered
-          : (product.unitPrice || 0);
+        : (product.unitPrice || 0);
       updateRow(index, {
         productId,
         variantId: "",
@@ -355,7 +356,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
         kgQty: undefined,
         subUnit: product.subUnit,
         bundleUnitType,
-        quantity: product.isBundleProduct ? 0 : 1,
+        quantity: product.isBundleProduct ? (isType1 ? 1 : 0) : 1,
       });
     } else {
       updateRow(index, { productId: "", variantId: "", variantName: "", unitPrice: 0, unit: "", productName: "", bundlesQty: undefined, kgQty: undefined, bundleUnitType: undefined });
@@ -369,22 +370,46 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
     const maxStock = product?.stock ?? 0;
     const unitType = row.bundleUnitType ?? "main";
     const largeLabel = (product?.unit ?? "").replace(/\(s\)$/i, "").trim().toLowerCase() + "s";
+    const isType1 = product?.subUnitIsSellUnit;
 
-    if (unitType === "main") {
-      if (salesType === "Retail" && value > maxStock && maxStock > 0) {
-        toast.warn(`Only ${maxStock} ${largeLabel} available in stock`);
-        return;
+    if (isType1) {
+      // Type 1: sub-unit is a real selling unit
+      // "main" = selling whole bundles; "sub" = selling in sub-units (e.g. lengths)
+      if (unitType === "main") {
+        if (salesType === "Retail" && value > maxStock && maxStock > 0) {
+          toast.warn(`Only ${maxStock} ${largeLabel} available in stock`);
+          return;
+        }
+        // Price per bundle stays as-is; quantity = number of bundles
+        updateRow(index, { bundlesQty: value, kgQty: undefined, quantity: value, unitPrice: product?.unitPrice || 0 });
+      } else {
+        // Sub-unit: quantity = number of sub-units; compute per-sub-unit price
+        const maxSubUnits = Math.floor(maxStock * bundleSize);
+        if (salesType === "Retail" && value > maxSubUnits && maxSubUnits > 0) {
+          toast.warn(`Only ${maxSubUnits} ${product?.subUnit ?? "units"} available in stock`);
+          return;
+        }
+        const perSubUnitPrice = (product?.unitPrice || 0) / bundleSize;
+        updateRow(index, { bundlesQty: undefined, kgQty: value, quantity: value, unitPrice: perSubUnitPrice });
       }
-      updateRow(index, { bundlesQty: value, kgQty: undefined, quantity: value });
     } else {
-      const totalBundles = value / bundleSize;
-      if (salesType === "Retail" && totalBundles > maxStock && maxStock > 0) {
-        toast.warn(`Only ${Math.floor(maxStock * bundleSize)} ${product?.subUnit ?? "units"} available in stock`);
-        return;
+      // Type 2 (original behaviour): sub-unit only describes a partial-bundle cut
+      if (unitType === "main") {
+        if (salesType === "Retail" && value > maxStock && maxStock > 0) {
+          toast.warn(`Only ${maxStock} ${largeLabel} available in stock`);
+          return;
+        }
+        updateRow(index, { bundlesQty: value, kgQty: undefined, quantity: value });
+      } else {
+        const totalBundles = value / bundleSize;
+        if (salesType === "Retail" && totalBundles > maxStock && maxStock > 0) {
+          toast.warn(`Only ${Math.floor(maxStock * bundleSize)} ${product?.subUnit ?? "units"} available in stock`);
+          return;
+        }
+        // Sub-unit cut: qty=1, unitPrice=total for this cut
+        const subUnitTotal = value * ((product?.unitPrice || 0) / bundleSize);
+        updateRow(index, { bundlesQty: undefined, kgQty: value, quantity: 1, unitPrice: subUnitTotal });
       }
-      // Sub-unit: qty=1, unitPrice=total for this cut (auto-calculated, adjustable by staff)
-      const subUnitTotal = value * ((product?.unitPrice || 0) / bundleSize);
-      updateRow(index, { bundlesQty: undefined, kgQty: value, quantity: 1, unitPrice: subUnitTotal });
     }
   };
 
@@ -542,6 +567,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                 {/* Quantity */}
                 <div className="w-[16%]">
                   {selectedProduct?.isBundleProduct ? (() => {
+                    const isType1 = selectedProduct.subUnitIsSellUnit;
                     const otherBundleRows = rows.filter((r, i) => i !== index && r.productId === row.productId);
                     const forcedType: "main" | "sub" | null = otherBundleRows.length > 0
                       ? (otherBundleRows[0].bundleUnitType === "sub" ? "main" : "sub")
@@ -549,6 +575,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                     const unitType: "main" | "sub" = row.bundleUnitType ?? forcedType ?? "main";
                     const largeLabel = (selectedProduct.unit ?? "BUNDLE(S)").replace(/\(s\)$/i, "").trim().toLowerCase() + "s";
                     const subLabel = selectedProduct.subUnit ?? "kg";
+                    const displayQty = unitType === "main" ? row.bundlesQty : row.kgQty;
                     return (
                       <div className="flex flex-col gap-0.5">
                         {!forcedType && (
@@ -556,10 +583,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                             {(["main", "sub"] as const).map((t) => (
                               <button key={t} type="button"
                                 onClick={() => {
-                                  const newPrice = t === "sub"
-                                    ? (selectedProduct.unitPrice || 0) / (selectedProduct.bundleSize ?? 20)
-                                    : (selectedProduct.unitPrice || 0);
-                                  updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: 0, unitPrice: newPrice });
+                                  const newPrice = isType1
+                                    ? (t === "sub"
+                                        ? (selectedProduct.unitPrice || 0) / (selectedProduct.bundleSize ?? 20)
+                                        : (selectedProduct.unitPrice || 0))
+                                    : (t === "sub" ? 0 : (selectedProduct.unitPrice || 0));
+                                  updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: isType1 ? 1 : 0, unitPrice: newPrice });
                                 }}
                                 className={`flex-1 text-[7px] py-0.5 rounded border leading-tight ${unitType === t ? "bg-[#2ECC71] text-white border-[#2ECC71]" : "bg-gray-50 text-gray-400 border-gray-200"}`}
                               >{t === "main" ? largeLabel : subLabel}</button>
@@ -567,11 +596,11 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                           </div>
                         )}
                         <input
-                          type="number" min={0}
+                          type="number" min={isType1 ? 1 : 0}
                           max={unitType === "main" ? Math.floor(maxQuantity) : undefined}
-                          value={(unitType === "main" ? row.bundlesQty : row.kgQty) || ""}
-                          placeholder="0"
-                          onChange={(e) => handleBundleQtyChange(index, e.target.value === "" ? 0 : Number(e.target.value))}
+                          value={displayQty || ""}
+                          placeholder={isType1 ? "1" : "0"}
+                          onChange={(e) => handleBundleQtyChange(index, e.target.value === "" ? (isType1 ? 1 : 0) : Number(e.target.value))}
                           className="w-full h-[28px] border border-[#E5E7EB] rounded text-center text-[9px] outline-none bg-white"
                         />
                         <span className="text-[7px] text-gray-400 text-center">{unitType === "main" ? largeLabel : subLabel}</span>
@@ -741,6 +770,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                     {/* Quantity input */}
                     <TableCell className="w-[75px] md:w-[120px]">
                       {selectedProduct?.isBundleProduct ? (() => {
+                        const isType1 = selectedProduct.subUnitIsSellUnit;
                         const otherBundleRows = rows.filter((r, i) => i !== index && r.productId === row.productId);
                         const forcedType: "main" | "sub" | null = otherBundleRows.length > 0
                           ? (otherBundleRows[0].bundleUnitType === "sub" ? "main" : "sub")
@@ -748,6 +778,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                         const unitType: "main" | "sub" = row.bundleUnitType ?? forcedType ?? "main";
                         const largeLabel = (selectedProduct.unit ?? "BUNDLE(S)").replace(/\(s\)$/i, "").trim().toLowerCase() + "s";
                         const subLabel = selectedProduct.subUnit ?? "kg";
+                        const displayQty = unitType === "main" ? row.bundlesQty : row.kgQty;
                         return (
                           <div className="flex flex-col gap-1 items-center">
                             {!forcedType && (
@@ -755,10 +786,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                                 {(["main", "sub"] as const).map((t) => (
                                   <button key={t} type="button"
                                     onClick={() => {
-                                      const newPrice = t === "sub"
-                                        ? 0  // price set when kgQty is entered
-                                        : (selectedProduct.unitPrice || 0);
-                                      updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: 0, unitPrice: newPrice });
+                                      const newPrice = isType1
+                                        ? (t === "sub"
+                                            ? (selectedProduct.unitPrice || 0) / (selectedProduct.bundleSize ?? 20)
+                                            : (selectedProduct.unitPrice || 0))
+                                        : (t === "sub" ? 0 : (selectedProduct.unitPrice || 0));
+                                      updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: isType1 ? 1 : 0, unitPrice: newPrice });
                                     }}
                                     className={`text-[9px] px-1.5 py-0.5 rounded border ${unitType === t ? "bg-[#2ECC71] text-white border-[#2ECC71]" : "bg-gray-50 text-gray-400 border-gray-200"}`}
                                   >{t === "main" ? largeLabel : subLabel}</button>
@@ -767,11 +800,11 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                             )}
                             <div className="flex flex-col items-center">
                               <input
-                                type="number" min={0}
+                                type="number" min={isType1 ? 1 : 0}
                                 max={unitType === "main" ? Math.floor(maxQuantity) : undefined}
-                                value={(unitType === "main" ? row.bundlesQty : row.kgQty) || ""}
-                                placeholder="0"
-                                onChange={(e) => handleBundleQtyChange(index, e.target.value === "" ? 0 : Number(e.target.value))}
+                                value={displayQty || ""}
+                                placeholder={isType1 ? "1" : "0"}
+                                onChange={(e) => handleBundleQtyChange(index, e.target.value === "" ? (isType1 ? 1 : 0) : Number(e.target.value))}
                                 className="w-[50px] h-9 border border-[#E5E7EB] rounded text-center text-xs outline-none bg-white focus:ring-1 focus:ring-gray-200"
                               />
                               <span className="text-[9px] text-gray-400">{unitType === "main" ? largeLabel : subLabel}</span>
