@@ -1,7 +1,7 @@
 import React from "react";
 import type { Transaction } from "@/types/transactions";
 import { Button } from "@/components/ui/button";
-import { itemDisplayName, formatBundleQty, isBundleItem, isSubUnitItem, subUnitDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 
 interface SalesReceiptProps {
   transaction: Transaction;
@@ -78,27 +78,31 @@ const SalesReceipt: React.FC<SalesReceiptProps> = ({ transaction }) => {
           <tr className="border-b border-gray-200">
             <td className="px-2 py-3 border-r border-gray-200 text-sm">QTY</td>
             <td className="px-1.5 text-center text-sm border-r border-gray-200">DESCRIPTION</td>
-            <td className="px-1.5 text-center text-sm border-r border-gray-200">UNIT PRICE</td>
+            <td className="px-1.5 text-center text-sm border-r border-gray-200">UNIT PRICE(N)</td>
             <td className="px-1.5 text-center text-sm border-r border-gray-200">DISCOUNT</td>
-            <td className="px-1.5 text-center text-sm">AMOUNT</td>
+            <td className="px-1.5 text-center text-sm">AMOUNT(N)</td>
           </tr>
         </thead>
         <tbody>
           {transaction.items.map((row, i) => {
             const isSub = isSubUnitItem(row.bundlesQty, row.kgQty);
+            const isType1Sub = isSub && row.subUnitIsSellUnit;
+            const baseName = itemDisplayName(row.productName, row.variantName);
             return (
             <tr key={i} className="border-b border-gray-200">
               <td className="px-2 py-3 text-center text-xs border-r border-gray-200">
-                {isSub
-                  ? ""
-                  : isBundleItem(row.bundlesQty, row.kgQty)
-                    ? formatBundleQty(row.bundlesQty, row.kgQty, row.unit, row.subUnit)
-                    : row.quantity}
+                {isType1Sub
+                  ? row.kgQty
+                  : isSub
+                    ? 1
+                    : (row.bundlesQty ?? row.quantity)}
               </td>
               <td className="px-1.5 text-center text-xs border-r border-gray-200">
-                {isSub
-                  ? subUnitDisplayName(row.kgQty, row.subUnit, row.productName, row.variantName)
-                  : itemDisplayName(row.productName, row.variantName)}
+                {isType1Sub
+                  ? `${row.subUnit ?? ""} of ${baseName}`
+                  : isSub
+                    ? `${row.kgQty}${row.subUnit ?? "kg"} of ${baseName}`
+                    : row.unit ? `${row.unit} of ${baseName}` : baseName}
               </td>
               <td className="px-1.5 text-center text-xs border-r border-gray-200">
                 {isSub ? row.subtotal : row.unitPrice}

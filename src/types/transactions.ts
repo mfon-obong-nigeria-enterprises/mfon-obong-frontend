@@ -19,6 +19,7 @@ export interface Item {
   bundlesQty?: number;
   kgQty?: number;
   subUnit?: string;
+  subUnitIsSellUnit?: boolean;
 }
 
 export interface BaseUser {
