@@ -51,7 +51,7 @@ export const updateProductStock = async (
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
-  const response = await api.delete(`/products/${id}/delete`);
+  const response = await api.delete(`/products/${id}`);
   return response.data;
 };
 

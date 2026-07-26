@@ -366,11 +366,13 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
   const handleBundleQtyChange = (index: number, value: number) => {
     const row = rows[index];
     const product = products.find((p) => p._id === row.productId);
+    const variant = product?.variants?.find((v) => v.id === row.variantId);
     const bundleSize = product?.bundleSize ?? 20;
-    const maxStock = product?.stock ?? 0;
+    const maxStock = product?.hasVariants ? (variant?.stock ?? 0) : (product?.stock ?? 0);
     const unitType = row.bundleUnitType ?? "main";
     const largeLabel = (product?.unit ?? "").replace(/\(s\)$/i, "").trim().toLowerCase() + "s";
     const isType1 = product?.subUnitIsSellUnit;
+    const baseUnitPrice = product?.hasVariants ? (variant?.unitPrice ?? 0) : (product?.unitPrice || 0);
 
     if (isType1) {
       // Type 1: sub-unit is a real selling unit
@@ -381,7 +383,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
           return;
         }
         // Price per bundle stays as-is; quantity = number of bundles
-        updateRow(index, { bundlesQty: value, kgQty: undefined, quantity: value, unitPrice: product?.unitPrice || 0 });
+        updateRow(index, { bundlesQty: value, kgQty: undefined, quantity: value, unitPrice: baseUnitPrice });
       } else {
         // Sub-unit: quantity = number of sub-units; compute per-sub-unit price
         const maxSubUnits = Math.floor(maxStock * bundleSize);
@@ -389,7 +391,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
           toast.warn(`Only ${maxSubUnits} ${product?.subUnit ?? "units"} available in stock`);
           return;
         }
-        const perSubUnitPrice = (product?.unitPrice || 0) / bundleSize;
+        const perSubUnitPrice = baseUnitPrice / bundleSize;
         updateRow(index, { bundlesQty: undefined, kgQty: value, quantity: value, unitPrice: perSubUnitPrice });
       }
     } else {
@@ -407,7 +409,7 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
           return;
         }
         // Sub-unit cut: qty=1, unitPrice=total for this cut
-        const subUnitTotal = value * ((product?.unitPrice || 0) / bundleSize);
+        const subUnitTotal = value * (baseUnitPrice / bundleSize);
         updateRow(index, { bundlesQty: undefined, kgQty: value, quantity: 1, unitPrice: subUnitTotal });
       }
     }
@@ -583,11 +585,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                             {(["main", "sub"] as const).map((t) => (
                               <button key={t} type="button"
                                 onClick={() => {
+                                  const variantPrice = selectedProduct.hasVariants ? (selectedVariant?.unitPrice ?? 0) : (selectedProduct.unitPrice || 0);
                                   const newPrice = isType1
                                     ? (t === "sub"
-                                        ? (selectedProduct.unitPrice || 0) / (selectedProduct.bundleSize ?? 20)
-                                        : (selectedProduct.unitPrice || 0))
-                                    : (t === "sub" ? 0 : (selectedProduct.unitPrice || 0));
+                                        ? variantPrice / (selectedProduct.bundleSize ?? 20)
+                                        : variantPrice)
+                                    : (t === "sub" ? 0 : variantPrice);
                                   updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: isType1 ? 1 : 0, unitPrice: newPrice });
                                 }}
                                 className={`flex-1 text-[7px] py-0.5 rounded border leading-tight ${unitType === t ? "bg-[#2ECC71] text-white border-[#2ECC71]" : "bg-gray-50 text-gray-400 border-gray-200"}`}
@@ -786,11 +789,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                                 {(["main", "sub"] as const).map((t) => (
                                   <button key={t} type="button"
                                     onClick={() => {
+                                      const variantPrice = selectedProduct.hasVariants ? (selectedVariant?.unitPrice ?? 0) : (selectedProduct.unitPrice || 0);
                                       const newPrice = isType1
                                         ? (t === "sub"
-                                            ? (selectedProduct.unitPrice || 0) / (selectedProduct.bundleSize ?? 20)
-                                            : (selectedProduct.unitPrice || 0))
-                                        : (t === "sub" ? 0 : (selectedProduct.unitPrice || 0));
+                                            ? variantPrice / (selectedProduct.bundleSize ?? 20)
+                                            : variantPrice)
+                                        : (t === "sub" ? 0 : variantPrice);
                                       updateRow(index, { bundleUnitType: t, bundlesQty: undefined, kgQty: undefined, quantity: isType1 ? 1 : 0, unitPrice: newPrice });
                                     }}
                                     className={`text-[9px] px-1.5 py-0.5 rounded border ${unitType === t ? "bg-[#2ECC71] text-white border-[#2ECC71]" : "bg-gray-50 text-gray-400 border-gray-200"}`}

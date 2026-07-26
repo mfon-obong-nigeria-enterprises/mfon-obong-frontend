@@ -19,7 +19,7 @@ export function formatStock(
     const whole = Math.floor(stock);
     const remainder = Math.round((stock - whole) * bundleSize);
     if (remainder > 0) {
-      return `${whole} ${unit} ${remainder}${subUnit}`;
+      return `${whole} ${unit}, ${remainder}${subUnit}`;
     }
     return `${whole} ${unit}`;
   }

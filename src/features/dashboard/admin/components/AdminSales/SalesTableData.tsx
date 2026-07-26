@@ -28,10 +28,10 @@ import { useTransactionsStore } from "@/stores/useTransactionStore";
 
 // utils
 import { balanceClassT, toSentenceCaseName } from "@/utils/styles";
-import { itemDisplayName } from "@/utils/itemDisplay";
+import { itemDisplayName, isSubUnitItem } from "@/utils/itemDisplay";
 
 // types
-import type { Transaction } from "@/types/transactions";
+import type { Transaction, Item } from "@/types/transactions";
 
 //hooks
 import { useTransactionSearch } from "@/hooks/useTransactionSearch";
@@ -76,6 +76,13 @@ const SalesTableData = ({
   });
 
   const hasTransactions = currentTransaction && currentTransaction.length > 0;
+
+  const renderItemLabel = (item: Item): string => {
+    const isSub = isSubUnitItem(item.bundlesQty, item.kgQty);
+    const baseName = itemDisplayName(item.productName, item.variantName);
+    if (isSub) return `${item.kgQty}${item.subUnit ?? "kg"} of ${baseName}`;
+    return `${item.bundlesQty ?? item.quantity}x ${baseName}`;
+  };
 
   return (
     <div className="bg-white px-3 md:px-6 py-3 md:py-6 rounded-lg font-Inter">
@@ -143,8 +150,7 @@ const SalesTableData = ({
                       {transaction.items.length > 0 && (
                         <>
                           <span>
-                            {transaction.items[0].quantity}x{" "}
-                            {itemDisplayName(transaction.items[0].productName, transaction.items[0].variantName)}
+                            {renderItemLabel(transaction.items[0])}
                           </span>
                           {transaction.items.length > 1 && (
                             <Popover>
@@ -162,7 +168,7 @@ const SalesTableData = ({
                                   .slice(1)
                                   .map(
                                     (item, index) =>
-                                      `${item.quantity}x ${itemDisplayName(item.productName, item.variantName)}${
+                                      `${renderItemLabel(item)}${
                                         index < transaction.items.length - 2
                                           ? ", "
                                           : ""
