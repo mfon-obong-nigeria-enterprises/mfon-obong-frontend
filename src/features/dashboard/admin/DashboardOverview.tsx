@@ -27,9 +27,12 @@ const DashboardOverview: React.FC = () => {
   } = useClientStore();
   const { getTodaysSales, getSalesPercentageChange } = useTransactionsStore();
 
-  const lowStockCount = products?.filter(
-    (prod) => prod.stock <= prod.minStockLevel
-  ).length;
+  const lowStockCount = products?.filter((prod) => {
+    if (prod.hasVariants) {
+      return prod.variants?.some(v => v.minStockLevel > 0 && v.stock <= v.minStockLevel) ?? false;
+    }
+    return prod.minStockLevel > 0 && prod.stock <= prod.minStockLevel;
+  }).length;
   const todaysSales = getTodaysSales();
   const dailyChange = getSalesPercentageChange();
   const activeClients = getActiveClients();
