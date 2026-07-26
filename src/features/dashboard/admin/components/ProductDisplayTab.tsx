@@ -234,6 +234,13 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
         }
       }
 
+      if (product.isBundleProduct) {
+        const updatedProduct = await updateProduct(product._id, {
+          subUnitIsSellUnit: localSubUnitIsSellUnit,
+        });
+        updateProductInStore(updatedProduct);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product updated successfully");
       setEditMode(false);
@@ -258,12 +265,11 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
       toast.success("Product deleted successfully");
       setIsDeleteModalOpen(false); // Close modal on success
     } catch (error) {
-      if (isAxiosError(error) && error.response) {
-        console.error("Delete product error:", error);
-        toast.error(
-          "Failed to delete product: " + (error?.message || "Unknown error")
-        );
-      }
+      console.error("Delete product error:", error);
+      const message = isAxiosError(error)
+        ? (error.response?.data?.message || error.response?.data?.error || error.message)
+        : "An unexpected error occurred";
+      toast.error("Failed to delete product: " + message);
     } finally {
       setIsLoading(false);
     }
@@ -346,6 +352,26 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
             <p className="text-xs text-[#999]">All available grades have been added.</p>
           )}
         </div>
+
+        {product.isBundleProduct && (
+          <div className="flex items-center justify-between border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Sub-unit is a selling unit</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {localSubUnitIsSellUnit
+                  ? `Staff can sell in ${product.unit} OR ${product.subUnit ?? "sub-units"}`
+                  : `Sub-unit only tracks partial-bundle cuts`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLocalSubUnitIsSellUnit((v) => !v)}
+              className={`relative w-9 h-5 rounded-full transition-colors ${localSubUnitIsSellUnit ? "bg-green-500" : "bg-gray-300"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${localSubUnitIsSellUnit ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-8 mt-5">
           <Button onClick={() => setEditMode(false)} variant="outline" className="text-xs" type="button">
@@ -484,7 +510,7 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
           <div>
             <p className="font-medium text-gray-400">Total Stock</p>
             <p className="text-[var(--cl-text-semidark)] text-[0.8125rem]">
-              {totalStock} {product.unit}
+              {formatStock(totalStock, product.unit, product.isBundleProduct, product.bundleSize, product.subUnit)}
             </p>
           </div>
           <div>
@@ -569,8 +595,8 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
                     <span className="text-[var(--cl-text-semidark)] font-medium">
                       {v.name}
                     </span>
-                    <span className="text-right text-[var(--cl-text-semidark)]">
-                      {v.stock} {product.unit}
+                    <span className="text-right text-[var(--cl-text-semidark)] whitespace-nowrap">
+                      {formatStock(v.stock, product.unit, product.isBundleProduct, product.bundleSize, product.subUnit)}
                     </span>
                     <span className="text-right text-[var(--cl-text-semidark)]">
                       ₦{v.unitPrice.toLocaleString("en-NG")}
@@ -590,11 +616,10 @@ const ProductDisplayTab = ({ product }: ProductDisplayProps) => {
                 );
               })}
               {/* Footer: aggregate */}
-              <div className="grid grid-cols-4 px-3 py-2 bg-gray-50 border-t border-gray-200 text-[0.8125rem] font-semibold text-gray-600">
-                <span>Total</span>
-                <span className="text-right">{totalStock} {product.unit}</span>
-                <span className="text-right">₦{totalValue.toLocaleString("en-NG")}</span>
-                <span />
+              <div className="flex items-center gap-4 px-3 py-2 bg-gray-50 border-t border-gray-200 text-[0.8125rem] font-semibold text-gray-600">
+                <span className="flex-1">Total</span>
+                <span className="whitespace-nowrap">{formatStock(totalStock, product.unit, product.isBundleProduct, product.bundleSize, product.subUnit)}</span>
+                <span className="whitespace-nowrap">₦{totalValue.toLocaleString("en-NG")}</span>
               </div>
             </div>
           )}
