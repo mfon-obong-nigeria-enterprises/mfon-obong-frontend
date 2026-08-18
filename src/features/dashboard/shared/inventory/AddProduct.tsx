@@ -171,12 +171,12 @@ const AddProduct = () => {
           name: v.name,
           warehouseProductVariantId: v.warehouseProductVariantId,
           unitPrice: v.unitPrice,
-          stock: v.stock,
+          stock: sourceFromWarehouse ? 0 : v.stock,
           minStockLevel: v.minStockLevel,
         }));
       } else {
         payload.unitPrice = data.unitPrice;
-        payload.stock = data.stock;
+        payload.stock = sourceFromWarehouse ? 0 : data.stock;
         payload.minStockLevel = data.minStockLevel;
       }
 
