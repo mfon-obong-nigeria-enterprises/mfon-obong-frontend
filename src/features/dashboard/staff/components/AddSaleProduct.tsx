@@ -300,22 +300,26 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
         }
         return !rows.some((r, i) => i !== currentIndex && r.productId === p._id);
       }
-      // Variant product: show if at least one grade hasn't been claimed by another row
-      const usedVariantIds = rows
-        .filter((r, i) => i !== currentIndex && r.productId === p._id)
-        .map((r) => r.variantId);
-      return (p.variants?.filter((v) => v.stock > 0 && !usedVariantIds.includes(v.id)) ?? []).length > 0;
+      // Variant product: show if at least one grade hasn't been fully claimed by another row
+      const otherRowsForProduct = rows.filter((r, i) => i !== currentIndex && r.productId === p._id);
+      return (p.variants?.filter((v) => {
+        if (v.stock <= 0) return false;
+        const variantRowCount = otherRowsForProduct.filter((r) => r.variantId === v.id).length;
+        if (p.isBundleProduct) return variantRowCount < 2;
+        return variantRowCount === 0;
+      }) ?? []).length > 0;
     });
 
   // Grades available for the grade selector: exclude grades already selected in other rows
   const getAvailableVariants = (product: Product, currentIndex: number, currentRow: Row) => {
-    const usedVariantIds = rows
-      .filter((r, i) => i !== currentIndex && r.productId === product._id)
-      .map((r) => r.variantId)
-      .filter(Boolean);
-    return (product.variants ?? []).filter(
-      (v) => v.stock > 0 && (v.id === currentRow.variantId || !usedVariantIds.includes(v.id))
-    );
+    const otherRowsForProduct = rows.filter((r, i) => i !== currentIndex && r.productId === product._id);
+    return (product.variants ?? []).filter((v) => {
+      if (v.stock <= 0 && v.id !== currentRow.variantId) return false;
+      if (v.id === currentRow.variantId) return true;
+      const variantRowCount = otherRowsForProduct.filter((r) => r.variantId === v.id).length;
+      if (product.isBundleProduct) return variantRowCount < 2;
+      return variantRowCount === 0;
+    });
   };
 
   // Group an array of products by category name
@@ -570,7 +574,9 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                 <div className="w-[16%]">
                   {selectedProduct?.isBundleProduct ? (() => {
                     const isType1 = selectedProduct.subUnitIsSellUnit;
-                    const otherBundleRows = rows.filter((r, i) => i !== index && r.productId === row.productId);
+                    const otherBundleRows = selectedProduct.hasVariants
+                      ? rows.filter((r, i) => i !== index && r.productId === row.productId && r.variantId === row.variantId)
+                      : rows.filter((r, i) => i !== index && r.productId === row.productId);
                     const forcedType: "main" | "sub" | null = otherBundleRows.length > 0
                       ? (otherBundleRows[0].bundleUnitType === "sub" ? "main" : "sub")
                       : null;
@@ -774,7 +780,9 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
                     <TableCell className="w-[75px] md:w-[120px]">
                       {selectedProduct?.isBundleProduct ? (() => {
                         const isType1 = selectedProduct.subUnitIsSellUnit;
-                        const otherBundleRows = rows.filter((r, i) => i !== index && r.productId === row.productId);
+                        const otherBundleRows = selectedProduct.hasVariants
+                          ? rows.filter((r, i) => i !== index && r.productId === row.productId && r.variantId === row.variantId)
+                          : rows.filter((r, i) => i !== index && r.productId === row.productId);
                         const forcedType: "main" | "sub" | null = otherBundleRows.length > 0
                           ? (otherBundleRows[0].bundleUnitType === "sub" ? "main" : "sub")
                           : null;
