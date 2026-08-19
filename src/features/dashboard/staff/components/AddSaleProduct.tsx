@@ -275,9 +275,12 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
       (p.hasVariants ? (p.variants?.some((v) => v.stock > 0) ?? false) : p.stock > 0)
   );
 
-  // Total selectable slots: variant grades each count as 1, bundle products count as 2 (main + sub)
+  // Total selectable slots: variant grades each count as 1 (or 2 for bundle+variant), bundle products count as 2 (main + sub)
   const totalSelectableSlots = availableProducts.reduce((sum, p) => {
-    if (p.hasVariants) return sum + (p.variants?.filter((v) => v.stock > 0).length ?? 0);
+    if (p.hasVariants) {
+      const variantCount = p.variants?.filter((v) => v.stock > 0).length ?? 0;
+      return sum + (p.isBundleProduct ? variantCount * 2 : variantCount);
+    }
     if (p.isBundleProduct) return sum + 2;
     return sum + 1;
   }, 0);
@@ -424,7 +427,15 @@ const AddSaleProduct: React.FC<AddSaleProductProps> = ({
     const product = products.find((p) => p._id === row.productId);
     const variant = product?.variants?.find((v) => v.id === variantId);
     if (variant) {
-      updateRow(index, { variantId: variant.id, variantName: variant.name, unitPrice: variant.unitPrice });
+      const updates: Partial<Row> = { variantId: variant.id, variantName: variant.name, unitPrice: variant.unitPrice };
+      if (product?.isBundleProduct) {
+        const otherVariantRows = rows.filter((r, i) => i !== index && r.productId === row.productId && r.variantId === variantId);
+        if (otherVariantRows.length > 0) {
+          const otherType = otherVariantRows[0].bundleUnitType ?? "main";
+          updates.bundleUnitType = otherType === "main" ? "sub" : "main";
+        }
+      }
+      updateRow(index, updates);
     }
   };
 
