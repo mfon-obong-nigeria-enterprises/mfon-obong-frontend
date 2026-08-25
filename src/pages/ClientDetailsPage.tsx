@@ -424,8 +424,8 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
         cursorY += 10;
       }
 
-      const cycleOpeningBalance = cycleIndex === 0 ? historyOpeningBalance : 0;
-      const cycleFinalBalance = cycle.isOngoing ? currentBalance : 0;
+      const cycleOpeningBalance = cycle.openingBalance;
+      const cycleFinalBalance = cycle.isOngoing ? currentBalance : (cycle.closingBalance ?? 0);
 
       // Sort this cycle's transactions newest-to-oldest for display
       const cycleTxns = [...cycle.transactions].sort((a, b) => {
@@ -452,22 +452,12 @@ const ClientDetailsPage: React.FC<ClientDetailsPageProps> = ({
 
       const periodStart = cycle.startDate;
       const periodEnd = cycle.endDate || new Date();
-      const cycStartYear = periodStart.getFullYear();
-      const cycEndYear = periodEnd.getFullYear();
-      const cycStartMonth = periodStart.toLocaleDateString("en-US", { month: "long" });
-      const cycEndMonth = periodEnd.toLocaleDateString("en-US", { month: "long" });
-      let cycDateRangeText = "";
-      if (cycStartYear === cycEndYear) {
-        cycDateRangeText =
-          cycStartMonth === cycEndMonth
-            ? `${cycStartMonth}, ${cycStartYear}`
-            : `${cycStartMonth} - ${cycEndMonth}, ${cycStartYear}`;
-      } else {
-        cycDateRangeText = `${cycStartMonth} ${cycStartYear} - ${cycEndMonth} ${cycEndYear}`;
-      }
+      const fmtTitleDate = (d: Date) =>
+        d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      const cycDateRangeText = `${fmtTitleDate(periodStart)} – ${fmtTitleDate(periodEnd)}`;
       doc.setFont("helvetica", "bold");
       doc.setTextColor(204, 0, 0);
-      doc.text(`Cycle ${cycle.cycleNumber} — ${cycDateRangeText}`, margin, cursorY);
+      doc.text(cycDateRangeText, margin, cursorY);
       doc.setTextColor(51, 51, 51);
       cursorY += 10;
 

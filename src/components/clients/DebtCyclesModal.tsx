@@ -55,9 +55,9 @@ const DebtCyclesModal: React.FC<DebtCyclesModalProps> = ({
     });
   };
 
-  const exportCyclePDF = async (cycle: DebtCycle, cycleIndex: number) => {
-    const cycleOpeningBalance = cycleIndex === 0 ? openingBalance : 0;
-    const cycleFinalBalance = cycle.isOngoing ? currentBalance : 0;
+  const exportCyclePDF = async (cycle: DebtCycle, _cycleIndex: number) => {
+    const cycleOpeningBalance = cycle.openingBalance;
+    const cycleFinalBalance = cycle.isOngoing ? currentBalance : (cycle.closingBalance ?? 0);
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.width;
@@ -265,26 +265,14 @@ const DebtCyclesModal: React.FC<DebtCyclesModalProps> = ({
 
     const periodStart = cycle.startDate;
     const periodEnd = cycle.endDate || new Date();
-    const startYear = periodStart.getFullYear();
-    const endYear = periodEnd.getFullYear();
-    const startMonth = periodStart.toLocaleDateString("en-US", {
-      month: "long",
-    });
-    const endMonth = periodEnd.toLocaleDateString("en-US", { month: "long" });
-    let dateRangeText = "";
-    if (startYear === endYear) {
-      dateRangeText =
-        startMonth === endMonth
-          ? `${startMonth}, ${startYear}`
-          : `${startMonth} - ${endMonth}, ${startYear}`;
-    } else {
-      dateRangeText = `${startMonth} ${startYear} - ${endMonth} ${endYear}`;
-    }
+    const fmtTitleDate = (d: Date) =>
+      d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    const dateRangeText = `${fmtTitleDate(periodStart)} – ${fmtTitleDate(periodEnd)}`;
 
     doc.setFont("helvetica", "bold");
     doc.setTextColor(204, 0, 0);
     doc.text(
-      `Cycle ${cycle.cycleNumber} — ${dateRangeText}`,
+      dateRangeText,
       margin,
       cursorY
     );
