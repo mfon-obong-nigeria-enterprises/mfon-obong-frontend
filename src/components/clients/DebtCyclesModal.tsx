@@ -55,7 +55,7 @@ const DebtCyclesModal: React.FC<DebtCyclesModalProps> = ({
     });
   };
 
-  const exportCyclePDF = async (cycle: DebtCycle, cycleIndex: number) => {
+  const exportCyclePDF = async (cycle: DebtCycle, _cycleIndex: number) => {
     const cycleOpeningBalance = cycle.openingBalance;
     const cycleFinalBalance = cycle.isOngoing ? currentBalance : (cycle.closingBalance ?? 0);
 
