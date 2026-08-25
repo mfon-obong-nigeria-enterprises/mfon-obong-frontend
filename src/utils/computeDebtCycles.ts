@@ -8,6 +8,8 @@ export interface DebtCycle {
   endDate: Date | null; // null = ongoing
   transactions: any[];
   isOngoing: boolean;
+  openingBalance: number;
+  closingBalance: number | null; // null = ongoing
 }
 
 export function computeOpeningBalance(allTxns: any[], currentBalance: number): number {
@@ -40,6 +42,9 @@ export function computeDebtCycles(
   let runningBalance = openingBalance;
   let cycleStart = 0;
   let cycleNumber = 1;
+  let currentCycleOpeningBalance = openingBalance;
+  // True if the balance has been negative at any point in the current cycle
+  let hasGoneNegative = runningBalance < -0.5;
 
   for (let i = 0; i < chronologicalTxns.length; i++) {
     const txn = chronologicalTxns[i];
@@ -60,17 +65,26 @@ export function computeDebtCycles(
       }
     }
 
-    // Tolerance of 0.5 to handle floating-point rounding
-    if (Math.abs(runningBalance) < 0.5) {
+    if (runningBalance < -0.5) {
+      hasGoneNegative = true;
+    }
+
+    // Close cycle only when balance was negative at some point AND has now reached 0 or positive
+    if (hasGoneNegative && runningBalance >= -0.5) {
+      const closingBalance = Math.abs(runningBalance) < 0.5 ? 0 : runningBalance;
       cycles.push({
         cycleNumber: cycleNumber++,
         startDate: getTransactionDate(chronologicalTxns[cycleStart]),
         endDate: getTransactionDate(txn),
         transactions: chronologicalTxns.slice(cycleStart, i + 1),
         isOngoing: false,
+        openingBalance: currentCycleOpeningBalance,
+        closingBalance,
       });
       cycleStart = i + 1;
-      runningBalance = 0;
+      runningBalance = closingBalance;
+      currentCycleOpeningBalance = closingBalance;
+      hasGoneNegative = false;
     }
   }
 
@@ -82,6 +96,8 @@ export function computeDebtCycles(
       endDate: null,
       transactions: chronologicalTxns.slice(cycleStart),
       isOngoing: true,
+      openingBalance: currentCycleOpeningBalance,
+      closingBalance: null,
     });
   }
 
